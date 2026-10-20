@@ -1,0 +1,157 @@
+{
+  "id": "film-cinestill-800t",
+  "name": "Cinestill 800T-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Tungsten-balanced cinema film: cool cast, cyan shadows, warm reds.",
+  "tags": [
+    "film",
+    "night",
+    "tungsten",
+    "cinematic"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "glow"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 8,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 60,
+      "shadowDensity": 30,
+      "microContrast": 15,
+      "colorDensity": 30,
+      "warmthBias": -18
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.03
+        },
+        {
+          "x": 0.25,
+          "y": 0.262
+        },
+        {
+          "x": 0.5,
+          "y": 0.515
+        },
+        {
+          "x": 0.75,
+          "y": 0.768
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": -6,
+          "sat": 12,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": -10,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 200,
+        "sat": 18,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 30,
+        "sat": 8,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 30,
+        "size": 32,
+        "roughness": 55,
+        "color": 8,
+        "type": "custom"
+      },
+      "halation": {
+        "amount": 48,
+        "threshold": 62,
+        "radius": 32,
+        "hue": 10
+      },
+      "bloom": {
+        "amount": 12,
+        "threshold": 70,
+        "radius": 40,
+        "warmth": -10
+      }
+    }
+  }
+}

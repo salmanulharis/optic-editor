@@ -1,0 +1,157 @@
+{
+  "id": "cine-moody-forest",
+  "name": "Moody Forest",
+  "group": "Cinematic",
+  "version": 3,
+  "description": "Dark, olive-toned greens and dense shadows.",
+  "tags": [
+    "cinematic",
+    "moody",
+    "forest",
+    "green"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "vignette",
+    "clarity"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 10,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 45,
+      "shadowDensity": 60,
+      "microContrast": 30,
+      "colorDensity": 35,
+      "warmthBias": -5
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.22
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.77
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": -10,
+          "sat": -15,
+          "lum": 0
+        },
+        "green": {
+          "hue": -10,
+          "sat": -20,
+          "lum": -20
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": -20,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 160,
+        "sat": 10,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 0,
+      "saturation": -10,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 18,
+        "size": 20,
+        "roughness": 45,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -20,
+        "midpoint": 45,
+        "roundness": 0,
+        "feather": 60,
+        "highlights": 25,
+        "style": "highlight"
+      },
+      "texture": 0,
+      "clarity": 0,
+      "dehaze": 10
+    }
+  }
+}

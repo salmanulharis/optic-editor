@@ -1,0 +1,163 @@
+{
+  "id": "cine-teal-orange",
+  "name": "Teal & Orange",
+  "group": "Cinematic",
+  "version": 3,
+  "description": "Blockbuster complementary grade: teal shadows, warm skin.",
+  "tags": [
+    "cinematic",
+    "teal",
+    "orange",
+    "grade"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "lut",
+    "grain",
+    "vignette",
+    "clarity"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 14,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 50,
+      "shadowDensity": 40,
+      "microContrast": 30,
+      "colorDensity": 30,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.22
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.77
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 10,
+          "lum": 5
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 15,
+          "sat": -25,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": -15,
+          "sat": -10,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 205,
+        "sat": 28,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 60,
+        "sat": 18,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    },
+    "lut": {
+      "id": "optic-teal-orange-33",
+      "inputSpace": "srgb",
+      "amount": 35
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 18,
+        "roughness": 40,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -15,
+        "midpoint": 45,
+        "roundness": 0,
+        "feather": 60,
+        "highlights": 25,
+        "style": "highlight"
+      },
+      "texture": 0,
+      "clarity": 10,
+      "dehaze": 0
+    }
+  }
+}

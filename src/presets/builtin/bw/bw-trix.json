@@ -1,0 +1,90 @@
+{
+  "id": "bw-trix",
+  "name": "Tri-X-like",
+  "group": "Black & White",
+  "version": 3,
+  "description": "Gritty, contrasty classic street monochrome.",
+  "tags": [
+    "bw",
+    "film",
+    "street",
+    "grit"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "bw",
+    "grain",
+    "vignette"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 25,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 35,
+      "shadowDensity": 40,
+      "microContrast": 45,
+      "colorDensity": 0,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.01
+        },
+        {
+          "x": 0.25,
+          "y": 0.216
+        },
+        {
+          "x": 0.5,
+          "y": 0.505
+        },
+        {
+          "x": 0.75,
+          "y": 0.781
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "treatment": "monochrome",
+    "bwMixer": {
+      "mix": 100,
+      "red": 10,
+      "orange": 10,
+      "yellow": 5,
+      "green": 0,
+      "aqua": 0,
+      "blue": -10,
+      "purple": 0,
+      "magenta": 0
+    },
+    "effects": {
+      "grain": {
+        "amount": 45,
+        "size": 50,
+        "roughness": 65,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -25,
+        "midpoint": 40,
+        "roundness": 0,
+        "feather": 65,
+        "highlights": 25,
+        "style": "highlight"
+      }
+    }
+  }
+}

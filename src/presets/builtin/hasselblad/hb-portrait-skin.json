@@ -1,0 +1,170 @@
+{
+  "id": "hb-portrait-skin",
+  "name": "Portrait Skin",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Even, luminous skin with gentle warmth and soft highlights.",
+  "tags": [
+    "portrait",
+    "skin",
+    "soft"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "pointColor",
+    "colorGrading",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -5,
+      "highlights": -10,
+      "shadows": 6,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 80,
+      "shadowDensity": 10,
+      "microContrast": 5,
+      "colorDensity": 15,
+      "warmthBias": 6
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.241
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.756
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 6,
+          "sat": -4,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": -8,
+          "lum": 6
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 45
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 70,
+        "sat": 6,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "calibration": {
+      "red": {
+        "hue": 4,
+        "sat": 0
+      },
+      "green": {
+        "hue": 0,
+        "sat": 0
+      },
+      "blue": {
+        "hue": 0,
+        "sat": 0
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": -2,
+      "protectSkin": false
+    }
+  }
+}

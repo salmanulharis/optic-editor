@@ -1,0 +1,70 @@
+{
+  "id": "lc-monochrom-soft",
+  "name": "Monochrom (soft)",
+  "group": "Leica-inspired",
+  "version": 2,
+  "description": "Gentle monochrome with smooth tones and darkened skies.",
+  "tags": [
+    "bw",
+    "monochrome",
+    "soft"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "bw"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -5,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 70,
+      "shadowDensity": 45,
+      "microContrast": 35,
+      "colorDensity": 0,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.03
+        },
+        {
+          "x": 0.25,
+          "y": 0.262
+        },
+        {
+          "x": 0.5,
+          "y": 0.515
+        },
+        {
+          "x": 0.75,
+          "y": 0.768
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "treatment": "monochrome",
+    "bwMixer": {
+      "mix": 100,
+      "red": 15,
+      "orange": 15,
+      "yellow": 0,
+      "green": 0,
+      "aqua": -10,
+      "blue": -25,
+      "purple": 0,
+      "magenta": 0
+    }
+  }
+}

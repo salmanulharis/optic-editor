@@ -1,0 +1,79 @@
+{
+  "id": "lc-natural",
+  "name": "Natural",
+  "group": "Leica-inspired",
+  "version": 2,
+  "description": "Restrained Leica rendering: dense, warm, honest.",
+  "tags": [
+    "natural",
+    "everyday"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 4,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 45,
+      "shadowDensity": 55,
+      "microContrast": 40,
+      "colorDensity": 25,
+      "warmthBias": 3
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.226
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.766
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "calibration": {
+      "red": {
+        "hue": 4,
+        "sat": 8
+      },
+      "green": {
+        "hue": 0,
+        "sat": 0
+      },
+      "blue": {
+        "hue": 0,
+        "sat": -6
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 2,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

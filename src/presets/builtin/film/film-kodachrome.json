@@ -1,0 +1,157 @@
+{
+  "id": "film-kodachrome",
+  "name": "Kodachrome-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Rich reds, deep blues and classic slide contrast.",
+  "tags": [
+    "film",
+    "slide",
+    "classic",
+    "rich"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "vignette",
+    "clarity"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 18,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 35,
+      "shadowDensity": 45,
+      "microContrast": 20,
+      "colorDensity": 60,
+      "warmthBias": 2
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.211
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.776
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 4,
+          "sat": 20,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": -4,
+          "sat": 10,
+          "lum": 0
+        },
+        "green": {
+          "hue": -6,
+          "sat": -5,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 4,
+          "sat": 12,
+          "lum": -12
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 70,
+        "sat": 6,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 12,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 12,
+        "size": 14,
+        "roughness": 35,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -10,
+        "midpoint": 45,
+        "roundness": 0,
+        "feather": 60,
+        "highlights": 25,
+        "style": "highlight"
+      },
+      "texture": 0,
+      "clarity": 5,
+      "dehaze": 0
+    }
+  }
+}

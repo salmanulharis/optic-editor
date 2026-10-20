@@ -1,0 +1,108 @@
+{
+  "id": "hb-warm-studio",
+  "name": "Warm Studio",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Warm, flattering studio light with smooth skin.",
+  "tags": [
+    "studio",
+    "portrait",
+    "warm"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "pointColor",
+    "colorGrading",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 6,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 78,
+      "shadowDensity": 15,
+      "microContrast": 6,
+      "colorDensity": 20,
+      "warmthBias": 14
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.235
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.76
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 35
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 60,
+        "sat": 8,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

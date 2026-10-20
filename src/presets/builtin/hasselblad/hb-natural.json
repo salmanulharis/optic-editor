@@ -1,0 +1,145 @@
+{
+  "id": "hb-natural",
+  "name": "Natural",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Accurate, smooth, restrained medium-format colour.",
+  "tags": [
+    "natural",
+    "portrait",
+    "skin"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "pointColor",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 5,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 75,
+      "shadowDensity": 15,
+      "microContrast": 8,
+      "colorDensity": 20,
+      "warmthBias": 3
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.235
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.76
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": -4,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 8,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 6,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 30
+        }
+      ]
+    },
+    "calibration": {
+      "red": {
+        "hue": 0,
+        "sat": 0
+      },
+      "green": {
+        "hue": 0,
+        "sat": 10
+      },
+      "blue": {
+        "hue": 0,
+        "sat": -5
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 6,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "id": "film-gold",
+  "name": "Gold-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Golden, nostalgic consumer film warmth.",
+  "tags": [
+    "film",
+    "warm",
+    "nostalgic"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "glow"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 8,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 55,
+      "shadowDensity": 20,
+      "microContrast": 10,
+      "colorDensity": 40,
+      "warmthBias": 18
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.02
+        },
+        {
+          "x": 0.25,
+          "y": 0.255
+        },
+        {
+          "x": 0.5,
+          "y": 0.51
+        },
+        {
+          "x": 0.75,
+          "y": 0.77
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 12,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": -10,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 40,
+        "sat": 5,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 80,
+        "sat": 12,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 85,
+        "sat": 10,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 22,
+        "size": 24,
+        "roughness": 48,
+        "color": 0,
+        "type": "custom"
+      },
+      "bloom": {
+        "amount": 8,
+        "threshold": 72,
+        "radius": 45,
+        "warmth": 20
+      }
+    }
+  }
+}

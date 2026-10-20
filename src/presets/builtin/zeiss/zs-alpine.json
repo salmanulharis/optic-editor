@@ -1,0 +1,108 @@
+{
+  "id": "zs-alpine",
+  "name": "Alpine",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Crisp mountain air: clean whites, deep skies, fresh greens.",
+  "tags": [
+    "landscape",
+    "mountain",
+    "cool"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 12,
+      "highlights": -15,
+      "shadows": 0,
+      "whites": 10,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 15,
+      "shadowDensity": 20,
+      "microContrast": 60,
+      "colorDensity": 20,
+      "warmthBias": -10
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.226
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.766
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 8,
+          "sat": 8,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 10,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 12,
+          "lum": -8
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "presence": {
+      "vibrance": 8,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "id": "zs-t-clean",
+  "name": "T* Clean",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Neutral-cool, clean and crisp with clear blues and greens.",
+  "tags": [
+    "clean",
+    "crisp",
+    "neutral"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 10,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": -8
+    },
+    "look": {
+      "highlightRolloff": 15,
+      "shadowDensity": 20,
+      "microContrast": 55,
+      "colorDensity": 15,
+      "warmthBias": -6
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.226
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.766
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "calibration": {
+      "red": {
+        "hue": 0,
+        "sat": 0
+      },
+      "green": {
+        "hue": 0,
+        "sat": 8
+      },
+      "blue": {
+        "hue": 0,
+        "sat": 10
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 5,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

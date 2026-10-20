@@ -1,0 +1,87 @@
+{
+  "id": "zs-cool-contrast",
+  "name": "Cool Contrast",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Cool, contrasty and crisp with blue-tinted shadows.",
+  "tags": [
+    "cool",
+    "contrast"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "colorGrading",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 22,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": -12
+    },
+    "look": {
+      "highlightRolloff": 10,
+      "shadowDensity": 30,
+      "microContrast": 60,
+      "colorDensity": 15,
+      "warmthBias": -14
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.211
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.776
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 250,
+        "sat": 10,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

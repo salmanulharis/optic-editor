@@ -1,0 +1,93 @@
+{
+  "id": "bw-high-contrast",
+  "name": "High Contrast",
+  "group": "Black & White",
+  "version": 3,
+  "description": "Graphic monochrome with deep blacks and bright whites.",
+  "tags": [
+    "bw",
+    "contrast",
+    "graphic"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "bw",
+    "grain",
+    "vignette",
+    "clarity"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 40,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 10,
+      "blacks": -15
+    },
+    "look": {
+      "highlightRolloff": 20,
+      "shadowDensity": 40,
+      "microContrast": 40,
+      "colorDensity": 0,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.19
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.79
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "treatment": "monochrome",
+    "bwMixer": {
+      "mix": 100,
+      "red": 10,
+      "orange": 0,
+      "yellow": 0,
+      "green": 0,
+      "aqua": 0,
+      "blue": -15,
+      "purple": 0,
+      "magenta": 0
+    },
+    "effects": {
+      "grain": {
+        "amount": 25,
+        "size": 30,
+        "roughness": 55,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -15,
+        "midpoint": 45,
+        "roundness": 0,
+        "feather": 60,
+        "highlights": 25,
+        "style": "highlight"
+      },
+      "texture": 0,
+      "clarity": 15,
+      "dehaze": 0
+    }
+  }
+}

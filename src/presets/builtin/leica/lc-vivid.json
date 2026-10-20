@@ -1,0 +1,80 @@
+{
+  "id": "lc-vivid",
+  "name": "Vivid",
+  "group": "Leica-inspired",
+  "version": 2,
+  "description": "Saturated yet dense colour with strong presence.",
+  "tags": [
+    "vivid",
+    "saturated",
+    "punchy"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 14,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 35,
+      "shadowDensity": 60,
+      "microContrast": 55,
+      "colorDensity": 45,
+      "warmthBias": 2
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.214
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.774
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "calibration": {
+      "red": {
+        "hue": 4,
+        "sat": 18
+      },
+      "green": {
+        "hue": 0,
+        "sat": 10
+      },
+      "blue": {
+        "hue": 0,
+        "sat": 12
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 18,
+      "saturation": 10,
+      "protectSkin": false
+    }
+  }
+}

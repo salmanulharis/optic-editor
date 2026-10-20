@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Optic bench</title>
+    <style>
+      body { margin: 0; background: #1c1c1c; color: #d4d4d4; font: 13px ui-monospace, monospace; }
+      header { display: flex; gap: 8px; padding: 10px; border-bottom: 1px solid #333; }
+      button { background: #333; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+      #view { width: 1280px; height: 800px; display: block; }
+      pre { padding: 10px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Optic bench</strong>
+      <button id="seam">Seam test (4096 px)</button>
+      <button id="run">Benchmark (48 MP)</button>
+    </header>
+    <pre id="out"></pre>
+    <canvas id="view"></canvas>
+    <script type="module" src="/src/bench/main.ts"></script>
+  </body>
+</html>

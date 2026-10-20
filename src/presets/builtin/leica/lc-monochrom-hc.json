@@ -1,0 +1,70 @@
+{
+  "id": "lc-monochrom-hc",
+  "name": "Monochrom (high contrast)",
+  "group": "Leica-inspired",
+  "version": 2,
+  "description": "Deep, contrasty monochrome; reds lifted, skies darkened.",
+  "tags": [
+    "bw",
+    "monochrome",
+    "contrast"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "bw"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 30,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 6,
+      "blacks": -10
+    },
+    "look": {
+      "highlightRolloff": 30,
+      "shadowDensity": 70,
+      "microContrast": 60,
+      "colorDensity": 0,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.19
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.79
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "treatment": "monochrome",
+    "bwMixer": {
+      "mix": 100,
+      "red": 25,
+      "orange": 20,
+      "yellow": 10,
+      "green": 0,
+      "aqua": -20,
+      "blue": -35,
+      "purple": 0,
+      "magenta": 0
+    }
+  }
+}

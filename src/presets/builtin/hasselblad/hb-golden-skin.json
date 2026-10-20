@@ -1,0 +1,154 @@
+{
+  "id": "hb-golden-skin",
+  "name": "Golden Skin",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Golden, sun-kissed skin tones with warm highlights.",
+  "tags": [
+    "portrait",
+    "skin",
+    "golden",
+    "warm"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "pointColor",
+    "colorGrading",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 4,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 78,
+      "shadowDensity": 12,
+      "microContrast": 6,
+      "colorDensity": 20,
+      "warmthBias": 10
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.238
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.758
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 6,
+          "sat": 6,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 4,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 35
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 70,
+        "sat": 10,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 80,
+        "sat": 8,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 5,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

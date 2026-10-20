@@ -1,0 +1,81 @@
+{
+  "id": "bw-acros",
+  "name": "Acros-like",
+  "group": "Black & White",
+  "version": 3,
+  "description": "Smooth, fine-grained monochrome with luminous skin.",
+  "tags": [
+    "bw",
+    "film",
+    "smooth",
+    "portrait"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "bw",
+    "grain"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 15,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 65,
+      "shadowDensity": 30,
+      "microContrast": 20,
+      "colorDensity": 0,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.22
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.77
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "treatment": "monochrome",
+    "bwMixer": {
+      "mix": 100,
+      "red": 15,
+      "orange": 15,
+      "yellow": 0,
+      "green": 5,
+      "aqua": 0,
+      "blue": -20,
+      "purple": 0,
+      "magenta": 0
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 15,
+        "roughness": 35,
+        "color": 0,
+        "type": "custom"
+      }
+    }
+  }
+}

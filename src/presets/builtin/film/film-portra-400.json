@@ -1,0 +1,150 @@
+{
+  "id": "film-portra-400",
+  "name": "Portra 400-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Warm, forgiving colour negative look with creamy skin.",
+  "tags": [
+    "film",
+    "portrait",
+    "warm"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "glow"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -4,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 65,
+      "shadowDensity": 15,
+      "microContrast": 12,
+      "colorDensity": 40,
+      "warmthBias": 6
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.035
+        },
+        {
+          "x": 0.25,
+          "y": 0.261
+        },
+        {
+          "x": 0.5,
+          "y": 0.507
+        },
+        {
+          "x": 0.75,
+          "y": 0.754
+        },
+        {
+          "x": 1,
+          "y": 0.98
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 4,
+          "sat": 4,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": -14,
+          "sat": -18,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": -8,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 60,
+        "sat": 5,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 70,
+        "sat": 10,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 0,
+      "saturation": -5,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 22,
+        "size": 22,
+        "roughness": 45,
+        "color": 0,
+        "type": "custom"
+      },
+      "bloom": {
+        "amount": 10,
+        "threshold": 72,
+        "radius": 45,
+        "warmth": 10
+      }
+    }
+  }
+}

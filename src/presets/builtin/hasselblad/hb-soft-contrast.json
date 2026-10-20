@@ -1,0 +1,83 @@
+{
+  "id": "hb-soft-contrast",
+  "name": "Soft Contrast",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Low contrast with open shadows and protected highlights.",
+  "tags": [
+    "soft",
+    "low contrast",
+    "portrait"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "pointColor",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -15,
+      "highlights": -15,
+      "shadows": 12,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 85,
+      "shadowDensity": 0,
+      "microContrast": 0,
+      "colorDensity": 15,
+      "warmthBias": 2
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.02
+        },
+        {
+          "x": 0.25,
+          "y": 0.275
+        },
+        {
+          "x": 0.5,
+          "y": 0.51
+        },
+        {
+          "x": 0.75,
+          "y": 0.755
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 30
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 3,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

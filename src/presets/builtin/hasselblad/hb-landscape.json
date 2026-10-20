@@ -1,0 +1,125 @@
+{
+  "id": "hb-landscape",
+  "name": "Landscape",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Rich, natural greens and clean skies with long highlight roll-off.",
+  "tags": [
+    "landscape",
+    "nature",
+    "greens"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "calibration",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 12,
+      "highlights": -12,
+      "shadows": 8,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 70,
+      "shadowDensity": 20,
+      "microContrast": 15,
+      "colorDensity": 30,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.229
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.764
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 12,
+          "sat": 4,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 10,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 6,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 8,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "calibration": {
+      "red": {
+        "hue": 0,
+        "sat": 0
+      },
+      "green": {
+        "hue": 0,
+        "sat": 18
+      },
+      "blue": {
+        "hue": 0,
+        "sat": 10
+      },
+      "shadowTint": 0,
+      "matrix": null
+    },
+    "presence": {
+      "vibrance": 12,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

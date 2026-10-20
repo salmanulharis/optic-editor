@@ -1,0 +1,62 @@
+{
+  "id": "zs-clarity",
+  "name": "Clarity",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Maximum micro-contrast with neutral, slightly cool colour.",
+  "tags": [
+    "clarity",
+    "detail"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 8,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": -6
+    },
+    "look": {
+      "highlightRolloff": 10,
+      "shadowDensity": 20,
+      "microContrast": 70,
+      "colorDensity": 10,
+      "warmthBias": -6
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.232
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.762
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 0,
+      "saturation": -4,
+      "protectSkin": false
+    }
+  }
+}

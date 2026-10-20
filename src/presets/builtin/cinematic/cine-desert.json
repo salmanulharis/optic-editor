@@ -1,0 +1,150 @@
+{
+  "id": "cine-desert",
+  "name": "Desert",
+  "group": "Cinematic",
+  "version": 3,
+  "description": "Hot, sun-baked oranges with teal-leaning skies.",
+  "tags": [
+    "cinematic",
+    "warm",
+    "desert"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "glow"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 10,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 60,
+      "shadowDensity": 30,
+      "microContrast": 25,
+      "colorDensity": 30,
+      "warmthBias": 20
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.223
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.768
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 15,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": -6,
+          "sat": 10,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": -10,
+          "sat": -20,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 50,
+        "sat": 10,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 70,
+        "sat": 8,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": 6,
+      "saturation": 0,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 18,
+        "roughness": 40,
+        "color": 0,
+        "type": "custom"
+      },
+      "bloom": {
+        "amount": 10,
+        "threshold": 70,
+        "radius": 50,
+        "warmth": 40
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "zs-neutral-precision",
+  "name": "Neutral Precision",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Accurate, slightly cool rendering with fine micro-contrast.",
+  "tags": [
+    "neutral",
+    "precise"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 6,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": -6
+    },
+    "look": {
+      "highlightRolloff": 15,
+      "shadowDensity": 15,
+      "microContrast": 50,
+      "colorDensity": 10,
+      "warmthBias": -5
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.232
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.762
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    }
+  }
+}

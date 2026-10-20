@@ -1,0 +1,139 @@
+{
+  "id": "film-astia",
+  "name": "Astia-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Soft slide film, flattering for skin.",
+  "tags": [
+    "film",
+    "slide",
+    "portrait",
+    "soft"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "pointColor",
+    "presence",
+    "grain"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -4,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 70,
+      "shadowDensity": 15,
+      "microContrast": 8,
+      "colorDensity": 35,
+      "warmthBias": 2
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.238
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.758
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": -4,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 25
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 2,
+      "saturation": 4,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 12,
+        "size": 14,
+        "roughness": 35,
+        "color": 0,
+        "type": "custom"
+      }
+    }
+  }
+}

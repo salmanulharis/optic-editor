@@ -1,0 +1,108 @@
+{
+  "id": "hb-muted-editorial",
+  "name": "Muted Editorial",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Quiet, desaturated editorial palette with a soft matte base.",
+  "tags": [
+    "editorial",
+    "muted",
+    "matte"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "pointColor",
+    "colorGrading",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -8,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 80,
+      "shadowDensity": 15,
+      "microContrast": 6,
+      "colorDensity": 25,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.03
+        },
+        {
+          "x": 0.25,
+          "y": 0.262
+        },
+        {
+          "x": 0.5,
+          "y": 0.515
+        },
+        {
+          "x": 0.75,
+          "y": 0.768
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 30
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 220,
+        "sat": 6,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 60,
+        "sat": 5,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": -5,
+      "saturation": -18,
+      "protectSkin": false
+    }
+  }
+}

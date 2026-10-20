@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #1c1c1c;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+@layer components {
+  .input {
+    @apply rounded border border-line bg-[#2d2d2d] px-1.5 py-1 text-xs text-ink outline-none focus:border-[#666];
+  }
+}
+
+/* Neutral scrollbars (no colour that could bias judgement). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+}

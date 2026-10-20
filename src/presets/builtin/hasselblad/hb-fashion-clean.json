@@ -1,0 +1,83 @@
+{
+  "id": "hb-fashion-clean",
+  "name": "Fashion Clean",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Crisp, bright and clean with controlled saturation.",
+  "tags": [
+    "fashion",
+    "clean",
+    "bright"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "pointColor",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 10,
+      "highlights": -8,
+      "shadows": 4,
+      "whites": 8,
+      "blacks": -5
+    },
+    "look": {
+      "highlightRolloff": 72,
+      "shadowDensity": 15,
+      "microContrast": 12,
+      "colorDensity": 15,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.232
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.762
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 35
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 8,
+      "saturation": -4,
+      "protectSkin": false
+    }
+  }
+}

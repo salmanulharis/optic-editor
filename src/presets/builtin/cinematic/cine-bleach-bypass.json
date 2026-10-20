@@ -1,0 +1,77 @@
+{
+  "id": "cine-bleach-bypass",
+  "name": "Bleach Bypass",
+  "group": "Cinematic",
+  "version": 3,
+  "description": "Silvery, high-contrast, desaturated film process look.",
+  "tags": [
+    "cinematic",
+    "desaturated",
+    "contrast"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "presence",
+    "grain",
+    "clarity"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 35,
+      "highlights": -10,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 30,
+      "shadowDensity": 50,
+      "microContrast": 50,
+      "colorDensity": 20,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.202
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.782
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": -10,
+      "saturation": -45,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 18,
+        "roughness": 45,
+        "color": 0,
+        "type": "custom"
+      },
+      "texture": 25,
+      "clarity": 20,
+      "dehaze": 0
+    }
+  }
+}

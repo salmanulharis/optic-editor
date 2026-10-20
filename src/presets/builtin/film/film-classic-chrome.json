@@ -1,0 +1,152 @@
+{
+  "id": "film-classic-chrome",
+  "name": "Classic Chrome-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Muted, documentary slide palette with hard shadows.",
+  "tags": [
+    "film",
+    "muted",
+    "documentary"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "hsl",
+    "colorGrading",
+    "presence",
+    "grain",
+    "vignette"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 10,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 35,
+      "shadowDensity": 50,
+      "microContrast": 25,
+      "colorDensity": 40,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.202
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.75,
+          "y": 0.782
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "hsl": {
+      "bands": {
+        "red": {
+          "hue": 4,
+          "sat": -10,
+          "lum": 0
+        },
+        "orange": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "yellow": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "green": {
+          "hue": 0,
+          "sat": -15,
+          "lum": 0
+        },
+        "aqua": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "blue": {
+          "hue": -8,
+          "sat": -15,
+          "lum": 0
+        },
+        "purple": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        },
+        "magenta": {
+          "hue": 0,
+          "sat": 0,
+          "lum": 0
+        }
+      }
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 200,
+        "sat": 8,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 70,
+        "sat": 6,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": -5,
+      "saturation": -20,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 16,
+        "roughness": 40,
+        "color": 0,
+        "type": "custom"
+      },
+      "vignette": {
+        "amount": -10,
+        "midpoint": 45,
+        "roundness": 0,
+        "feather": 60,
+        "highlights": 25,
+        "style": "highlight"
+      }
+    }
+  }
+}

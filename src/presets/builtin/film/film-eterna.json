@@ -1,0 +1,112 @@
+{
+  "id": "film-eterna",
+  "name": "Eterna-like",
+  "group": "Film",
+  "version": 3,
+  "description": "Low-contrast, low-saturation cinema film.",
+  "tags": [
+    "film",
+    "cinematic",
+    "muted",
+    "flat"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "colorGrading",
+    "presence",
+    "grain",
+    "glow"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -18,
+      "highlights": -15,
+      "shadows": 12,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 80,
+      "shadowDensity": 10,
+      "microContrast": 10,
+      "colorDensity": 30,
+      "warmthBias": 0
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.04
+        },
+        {
+          "x": 0.25,
+          "y": 0.285
+        },
+        {
+          "x": 0.5,
+          "y": 0.52
+        },
+        {
+          "x": 0.75,
+          "y": 0.76
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "colorGrading": {
+      "shadows": {
+        "hue": 200,
+        "sat": 6,
+        "lum": 0
+      },
+      "midtones": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "highlights": {
+        "hue": 50,
+        "sat": 4,
+        "lum": 0
+      },
+      "global": {
+        "hue": 0,
+        "sat": 0,
+        "lum": 0
+      },
+      "blending": 50,
+      "balance": 0
+    },
+    "presence": {
+      "vibrance": -5,
+      "saturation": -25,
+      "protectSkin": false
+    },
+    "effects": {
+      "grain": {
+        "amount": 15,
+        "size": 18,
+        "roughness": 40,
+        "color": 0,
+        "type": "custom"
+      },
+      "halation": {
+        "amount": 12,
+        "threshold": 70,
+        "radius": 30,
+        "hue": 15
+      },
+      "bloom": {
+        "amount": 8,
+        "threshold": 72,
+        "radius": 50,
+        "warmth": 0
+      }
+    }
+  }
+}

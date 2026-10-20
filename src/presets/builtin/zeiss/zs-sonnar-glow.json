@@ -1,0 +1,63 @@
+{
+  "id": "zs-sonnar-glow",
+  "name": "Sonnar Glow",
+  "group": "Zeiss-inspired",
+  "version": 2,
+  "description": "Softer roll-off and luminous mid-shadows with a hint of glow.",
+  "tags": [
+    "soft",
+    "glow",
+    "portrait"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": 0,
+      "highlights": -10,
+      "shadows": 15,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 70,
+      "shadowDensity": 0,
+      "microContrast": 30,
+      "colorDensity": 10,
+      "warmthBias": -3
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.25,
+          "y": 0.28
+        },
+        {
+          "x": 0.5,
+          "y": 0.51
+        },
+        {
+          "x": 0.75,
+          "y": 0.75
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 4,
+      "saturation": 0,
+      "protectSkin": false
+    }
+  }
+}

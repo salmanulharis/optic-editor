@@ -1,0 +1,83 @@
+{
+  "id": "hb-mf-matte",
+  "name": "Medium Format Matte",
+  "group": "Hasselblad-inspired",
+  "version": 2,
+  "description": "Lifted blacks, long highlight shoulder, calm colour.",
+  "tags": [
+    "matte",
+    "soft",
+    "medium format"
+  ],
+  "includes": [
+    "light",
+    "look",
+    "curve",
+    "pointColor",
+    "presence"
+  ],
+  "settings": {
+    "light": {
+      "contrast": -4,
+      "highlights": 0,
+      "shadows": 0,
+      "whites": 0,
+      "blacks": 0
+    },
+    "look": {
+      "highlightRolloff": 85,
+      "shadowDensity": 10,
+      "microContrast": 6,
+      "colorDensity": 25,
+      "warmthBias": 2
+    },
+    "curve": {
+      "rgb": [
+        {
+          "x": 0,
+          "y": 0.05
+        },
+        {
+          "x": 0.25,
+          "y": 0.27
+        },
+        {
+          "x": 0.5,
+          "y": 0.51
+        },
+        {
+          "x": 0.75,
+          "y": 0.75
+        },
+        {
+          "x": 1,
+          "y": 0.97
+        }
+      ]
+    },
+    "pointColor": {
+      "points": [
+        {
+          "target": {
+            "L": 0.68,
+            "C": 0.075,
+            "h": 55
+          },
+          "hue": 0,
+          "sat": 0,
+          "lum": 0,
+          "hueRange": 22,
+          "satRange": 55,
+          "lumRange": 75,
+          "smoothness": 70,
+          "uniformity": 30
+        }
+      ]
+    },
+    "presence": {
+      "vibrance": 0,
+      "saturation": -10,
+      "protectSkin": false
+    }
+  }
+}
