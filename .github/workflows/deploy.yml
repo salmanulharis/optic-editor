@@ -1,4 +1,4 @@
-# Build Optic and deploy dist/ to your server over SSH (rsync).
+# Build Optic and deploy dist/ to your server over SSH (rsync) when a version tag is pushed.
 #
 # Repository secrets (Settings → Secrets and variables → Actions):
 #   DEPLOY_HOST         server hostname or IP                       (required)
@@ -11,10 +11,13 @@
 # The web server must send the cross-origin isolation headers (see README → Deploy).
 name: Deploy
 
+# Runs only when a version tag is pushed, e.g. `git tag 1.0.1 && git push origin 1.0.1`
+# (a leading "v" also works: v1.0.1).
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 concurrency:
   group: deploy

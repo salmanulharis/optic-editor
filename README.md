@@ -81,7 +81,14 @@ Cross-Origin-Embedder-Policy: require-corp
 ### Your own server (GitHub Actions)
 
 `.github/workflows/deploy.yml` runs the unit tests, builds, and uploads `dist/` over SSH (rsync)
-on every push to `main`, or by hand from the Actions tab (**Deploy → Run workflow**). Add these
+when a version tag is pushed (`1.0.1` or `v1.0.1`); ordinary pushes deploy nothing:
+
+```bash
+git tag 1.0.1
+git push origin 1.0.1
+```
+
+Add these
 repository secrets (Settings → Secrets and variables → Actions):
 
 | Secret | Value |
