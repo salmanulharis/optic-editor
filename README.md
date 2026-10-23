@@ -78,6 +78,43 @@ Cross-Origin-Embedder-Policy: require-corp
 | **Cloudflare Pages** | Build command `npm run build`, output directory `dist`. `public/_headers` sets the headers, and Pages serves `index.html` for unknown paths. |
 | **Anything else** (nginx, S3 + CloudFront, Caddy, …) | Serve `dist/` with the two headers above. Serve `sw.js` and `manifest.webmanifest` with `Cache-Control: no-cache`, and fall back to `index.html` for unknown GET paths. |
 
+### Your own server (GitHub Actions)
+
+`.github/workflows/deploy.yml` runs the unit tests, builds, and uploads `dist/` over SSH (rsync)
+on every push to `main`, or by hand from the Actions tab (**Deploy → Run workflow**). Add these
+repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_HOST` | Server hostname or IP |
+| `DEPLOY_USER` | SSH user that can write to the web root |
+| `DEPLOY_SSH_KEY` | That user's private key (the whole file; add the public key to `~/.ssh/authorized_keys` on the server) |
+| `DEPLOY_PATH` | Web root, e.g. `/var/www/optic` |
+| `DEPLOY_PORT` | Optional, SSH port (default 22) |
+| `DEPLOY_KNOWN_HOSTS` | Optional, output of `ssh-keyscan -p PORT HOST`, to pin the host key |
+
+The server needs `rsync` and must serve the folder with the isolation headers, for example nginx:
+
+```nginx
+server {
+    server_name optic.example.com;
+    root /var/www/optic;
+
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+
+    types { application/wasm wasm; application/manifest+json webmanifest; }
+
+    location = /sw.js { add_header Cache-Control "no-cache"; add_header Cross-Origin-Opener-Policy "same-origin" always; add_header Cross-Origin-Embedder-Policy "require-corp" always; }
+    location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; add_header Cross-Origin-Opener-Policy "same-origin" always; add_header Cross-Origin-Embedder-Policy "require-corp" always; add_header Cross-Origin-Resource-Policy "same-origin" always; }
+    location / { try_files $uri /index.html; }
+}
+```
+
+(nginx drops inherited `add_header` lines inside a `location` that has its own, hence the
+repetition.) Serve it over HTTPS: service workers, OPFS and installation need a secure origin.
+
 Hosts that cannot set headers (for example GitHub Pages) are not supported. The service worker adds
 the headers to pages it serves from its cache, but the very first visit must already be isolated.
 
