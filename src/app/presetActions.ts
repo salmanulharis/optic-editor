@@ -19,6 +19,7 @@ import { useEdit } from '../state/editStore';
 import { defaultRecipeFor, useImage } from '../state/imageStore';
 import { usePresets } from '../state/presetStore';
 import { useUi } from '../state/uiStore';
+import { targetIds } from '../state/libraryStore';
 import { getRenderer } from './actions';
 
 const isRaw = () => !!useImage.getState().image?.isRaw;
@@ -90,7 +91,7 @@ export function presetFromRecipe(
 
 export function copySettings(groups: PresetGroup[]) {
   const recipe = structuredClone(useEdit.getState().recipe);
-  useUi.getState().set({ clipboard: { groups, recipe } });
+  useUi.getState().set({ clipboard: { groups, recipe, isRaw: isRaw() } });
   try {
     void navigator.clipboard?.writeText(JSON.stringify({ optic: 'settings', groups, recipe }));
   } catch { /* clipboard permission denied: the in-app clipboard still works */ }
@@ -99,6 +100,12 @@ export function copySettings(groups: PresetGroup[]) {
 export function pasteSettings(groups: PresetGroup[]) {
   const clip = useUi.getState().clipboard;
   if (!clip) return;
+  // Several photos selected in the filmstrip: paste to all of them (one history step each).
+  const ids = targetIds();
+  if (ids.length > 1) {
+    void import('../library/batch').then((b) => b.pasteToSelection(groups, clip, clip.isRaw ?? isRaw(), ids));
+    return;
+  }
   useEdit.getState().apply((r) => {
     let out = r;
     for (const g of groups) if (clip.groups.includes(g)) out = setGroup(out, g, getGroup(clip.recipe, g));

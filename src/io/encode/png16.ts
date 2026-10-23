@@ -12,11 +12,33 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
   return out;
 }
 
+/** Pixels per metre for a print resolution. */
+function phys(dpi: number): Uint8Array {
+  const b = new Uint8Array(9);
+  const dv = new DataView(b.buffer);
+  const ppm = Math.round(dpi / 0.0254);
+  dv.setUint32(0, ppm);
+  dv.setUint32(4, ppm);
+  b[8] = 1;
+  return b;
+}
+
+/** Uncompressed international text chunk (XMP). */
+function itxt(keyword: string, text: string): Uint8Array {
+  const k = Uint8Array.from(keyword, (c) => c.charCodeAt(0));
+  const t = new TextEncoder().encode(text);
+  const b = new Uint8Array(k.length + 5 + t.length);
+  b.set(k, 0);
+  // null, compression flag 0, method 0, empty language tag, empty translated keyword
+  b.set(t, k.length + 5);
+  return b;
+}
+
 export async function encodePng16(
   rgb: Uint16Array,
   width: number,
   height: number,
-  o: { icc: Uint8Array; profileName: string; exif: Uint8Array | null; onProgress?: (f: number) => void },
+  o: { icc: Uint8Array; profileName: string; exif: Uint8Array | null; xmp?: string | null; dpi?: number; onProgress?: (f: number) => void },
 ): Promise<Uint8Array> {
   const ihdr = new Uint8Array(13);
   const dv = new DataView(ihdr.buffer);
@@ -62,6 +84,8 @@ export async function encodePng16(
     chunk('IHDR', ihdr),
     chunk('iCCP', iccp),
     ...(o.exif ? [chunk('eXIf', o.exif)] : []),
+    ...(o.dpi ? [chunk('pHYs', phys(o.dpi))] : []),
+    ...(o.xmp ? [chunk('iTXt', itxt('XML:com.adobe.xmp', o.xmp))] : []),
     chunk('IDAT', idat),
     chunk('IEND', new Uint8Array(0)),
   ];

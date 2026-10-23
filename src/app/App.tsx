@@ -1,8 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { ACCEPT } from '../io/decode/decodeClient';
+import { useEffect, useState } from 'react';
+import { fromDataTransfer, isSupported, reviewImport } from '../library/importer';
+import { startLibrarySync } from '../library/open';
+import { useLibrary } from '../state/libraryStore';
+import { ImportDialog } from '../ui/library/ImportDialog';
+import { ImportButtons, LibraryView } from '../ui/library/LibraryView';
+import { BatchDialogs } from '../ui/library/BatchMenu';
+import { MobileApp } from '../ui/mobile/MobileApp';
+import { useMobileLayout } from '../ui/mobile/layout';
 import { useImage } from '../state/imageStore';
 import { Viewer } from '../ui/canvas/Viewer';
-import { ExportDialog } from '../ui/export/ExportDialog';
+import { BatchExportDialog, ExportDialog, ExportQueuePanel } from '../ui/export/ExportDialog';
+import { restoreExportQueue } from '../library/exportQueue';
+import { initPwa } from './pwa';
+import { SettingsDialog } from '../ui/SettingsDialog';
+import { Onboarding, ShortcutsOverlay } from '../ui/Overlays';
 import { HistogramView } from '../ui/histogram/Histogram';
 import { ColorMixerPanel } from '../ui/panels/ColorMixerPanel';
 import { CurvePanel } from '../ui/panels/CurvePanel';
@@ -21,6 +32,7 @@ import { DetailPanel } from '../ui/panels/DetailPanel';
 import { EffectsPanel } from '../ui/panels/EffectsPanel';
 import { GeometryPanel } from '../ui/panels/GeometryPanel';
 import { LensPanel } from '../ui/panels/LensPanel';
+import { MasksPanel } from '../ui/panels/MasksPanel';
 import { HistoryPanel, SnapshotDialog } from '../ui/history/HistoryPanel';
 import { Filmstrip } from '../ui/filmstrip/Filmstrip';
 import { PresetBrowser } from '../ui/presets/PresetBrowser';
@@ -32,22 +44,17 @@ import { openFile } from './openFile';
 import { TopBar } from './TopBar';
 
 function EmptyState() {
-  const ref = useRef<HTMLInputElement>(null);
+  const total = useLibrary((s) => s.photos.length);
   return (
-    <div className="absolute inset-0 flex items-center justify-center p-6">
-      <button
-        onClick={() => ref.current?.click()}
-        className="flex h-full max-h-[420px] w-full max-w-[640px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#3a3a3a] text-ink-dim hover:border-[#555] hover:text-ink"
-      >
-        <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="1.3">
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <circle cx="9" cy="10" r="2" />
-          <path d="M21 16l-5-5-8 8" />
-        </svg>
-        <span className="text-base">Drop a ProRAW DNG, HEIC or JPEG</span>
-        <span className="text-xs text-ink-faint">or click to choose · RAW (DNG, CR2/CR3, NEF, ARW, RAF, RW2, ORF), HEIC, JPEG, PNG, TIFF, WebP, AVIF</span>
-      </button>
-      <input ref={ref} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) openFile(f); e.target.value = ''; }} />
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+      <svg viewBox="0 0 24 24" className="h-10 w-10 text-ink-faint" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <circle cx="9" cy="10" r="2" />
+        <path d="M21 16l-5-5-8 8" />
+      </svg>
+      <span className="text-base text-ink">{total ? 'Pick a photo in the filmstrip or the library (G)' : 'Drop a ProRAW DNG, HEIC or JPEG'}</span>
+      <span className="text-xs text-ink-faint">RAW (DNG, CR2/CR3, NEF, ARW, RAF, RW2, ORF), HEIC, JPEG, PNG, TIFF, WebP, AVIF</span>
+      <div className="flex gap-2"><ImportButtons big /></div>
     </div>
   );
 }
@@ -60,11 +67,11 @@ function LoadingOverlay() {
       <div className="w-80 rounded-lg border border-line bg-panel p-4 shadow-xl">
         <div className="mb-1 truncate text-xs text-ink">{loading.fileName}</div>
         <div className="mb-2 text-[11px] text-ink-faint">{loading.label}</div>
-        <div className="h-1.5 overflow-hidden rounded bg-[#333]">
-          <div className="h-full bg-[#bbb] transition-[width] duration-200" style={{ width: `${Math.round(loading.fraction * 100)}%` }} />
+        <div className="h-1.5 overflow-hidden rounded bg-hover">
+          <div className="h-full bg-meter transition-[width] duration-200" style={{ width: `${Math.round(loading.fraction * 100)}%` }} />
         </div>
         <div className="mt-3 flex justify-end">
-          <button className="rounded border border-line px-3 py-1 text-xs text-ink hover:bg-[#333]" onClick={() => useImage.getState().cancel()}>
+          <button className="rounded border border-line px-3 py-1 text-xs text-ink hover:bg-hover" onClick={() => useImage.getState().cancel()}>
             Cancel
           </button>
         </div>
@@ -85,9 +92,14 @@ function ErrorToast() {
 }
 
 export function App() {
+  const mobile = useMobileLayout();
   useKeyboard();
   useEffect(() => {
     void usePresets.getState().init();
+    void useLibrary.getState().init();
+    startLibrarySync();
+    void restoreExportQueue();
+    void initPwa();
     // Background work (preset thumbnails) pauses while any pointer is held down.
     const down = () => useUi.getState().set({ dragging: true });
     const up = () => useUi.getState().set({ dragging: false });
@@ -102,8 +114,10 @@ export function App() {
   }, []);
   const image = useImage((s) => s.image);
   const loading = useImage((s) => s.loading);
+  const view = useLibrary((s) => s.view);
   const leftTab = useUi((s) => s.leftTab);
   const cropMode = useUi((s) => s.cropMode);
+  const masksOpen = useUi((s) => s.masksOpen);
   const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
@@ -120,8 +134,11 @@ export function App() {
       e.preventDefault();
       depth = 0;
       setDragOver(false);
-      const f = e.dataTransfer?.files?.[0];
-      if (f) openFile(f);
+      if (!e.dataTransfer) return;
+      // A single photo dropped on the editor opens it; anything else goes through the import dialog.
+      const single = useLibrary.getState().view === 'editor' && e.dataTransfer.items.length === 1 && e.dataTransfer.files.length === 1 && isSupported(e.dataTransfer.files[0].name);
+      if (single) { openFile(e.dataTransfer.files[0]); return; }
+      void fromDataTransfer(e.dataTransfer).then((list) => list.length && reviewImport(list));
     };
     window.addEventListener('dragenter', enter);
     window.addEventListener('dragover', over);
@@ -135,10 +152,33 @@ export function App() {
     };
   }, []);
 
+  const dialogs = (
+    <>
+      {view === 'library' && dragOver && (
+        <div className="pointer-events-none fixed inset-3 z-30 flex items-center justify-center rounded-xl border-2 border-dashed border-edge bg-black/40 text-sm text-ink">
+          Drop photos or folders to import
+        </div>
+      )}
+      <ImportDialog />
+      <BatchDialogs />
+      <ExportDialog />
+      <BatchExportDialog />
+      <ExportQueuePanel />
+      <CreatePresetDialog />
+      <CopyPasteDialog />
+      <SnapshotDialog />
+      <SettingsDialog />
+      <ShortcutsOverlay />
+      <Onboarding />
+    </>
+  );
+  if (mobile) return <><MobileApp />{dialogs}</>;
+
   return (
     <div className="flex h-[100dvh] flex-col bg-app text-ink">
       <TopBar />
-      <div className="flex min-h-0 flex-1">
+      {view === 'library' && <LibraryView />}
+      <div className={`min-h-0 flex-1 ${view === 'library' ? 'hidden' : 'flex'}`}>
         <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-panel lg:flex">
           <div className="flex border-b border-line text-xs font-medium uppercase tracking-wider">
             {(['presets', 'history'] as const).map((t) => (
@@ -157,8 +197,8 @@ export function App() {
             <LoadingOverlay />
             <ErrorToast />
             {dragOver && (
-              <div className="pointer-events-none absolute inset-3 z-30 flex items-center justify-center rounded-xl border-2 border-dashed border-[#888] bg-black/40 text-sm text-ink">
-                Drop to open
+              <div className="pointer-events-none absolute inset-3 z-30 flex items-center justify-center rounded-xl border-2 border-dashed border-edge bg-black/40 text-sm text-ink">
+                Drop to import
               </div>
             )}
           </div>
@@ -169,6 +209,7 @@ export function App() {
           <TreatmentToggle />
           <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${image ? '' : 'pointer-events-none opacity-40'}`}>
             {cropMode && <CropPanel />}
+            {masksOpen && <MasksPanel />}
             <WhiteBalancePanel />
             <LightPanel />
             <PresencePanel />
@@ -183,6 +224,7 @@ export function App() {
             <GeometryPanel />
             <CalibrationPanel />
             <LutPanel />
+            {!masksOpen && <MasksPanel />}
             <div className="flex justify-between gap-2 px-3 py-3 text-[11px]">
               <button className="text-ink-faint hover:text-ink" onClick={() => useUi.getState().set({ copyPaste: 'copy' })} title="Ctrl/Cmd+Shift+C">Copy settings…</button>
               <button className="text-ink-faint hover:text-ink" onClick={() => useUi.getState().set({ copyPaste: 'paste' })} title="Ctrl/Cmd+Shift+V">Paste settings…</button>
@@ -191,10 +233,7 @@ export function App() {
           </div>
         </aside>
       </div>
-      <ExportDialog />
-      <CreatePresetDialog />
-      <CopyPasteDialog />
-      <SnapshotDialog />
+      {dialogs}
     </div>
   );
 }

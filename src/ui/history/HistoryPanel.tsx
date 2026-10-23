@@ -19,7 +19,7 @@ const compareWith = (source: string) => {
 };
 
 const IconBtn = (p: { title: string; onClick(e: React.MouseEvent): void; children: React.ReactNode }) => (
-  <button title={p.title} className="rounded px-1 text-[11px] text-ink-faint hover:bg-[#3a3a3a] hover:text-ink" onClick={(e) => { e.stopPropagation(); p.onClick(e); }}>
+  <button title={p.title} className="rounded px-1 text-[11px] text-ink-faint hover:bg-active hover:text-ink" onClick={(e) => { e.stopPropagation(); p.onClick(e); }}>
     {p.children}
   </button>
 );
@@ -35,13 +35,13 @@ export function HistoryPanel() {
     <div className="flex min-h-0 flex-1 flex-col" onMouseLeave={() => preview(null)}>
       <div className="flex items-center justify-between border-b border-line px-2 py-1.5">
         <span className="text-[11px] font-medium uppercase tracking-wider text-ink-dim">Snapshots</span>
-        <button className="rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-[#333] hover:text-ink" title="Create snapshot (Ctrl/Cmd+Shift+S)"
+        <button className="rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-hover hover:text-ink" title="Create snapshot (Ctrl/Cmd+Shift+S)"
           onClick={() => useUi.getState().set({ snapshotDialog: true })}>+ Snapshot</button>
       </div>
       <div className="max-h-[35%] overflow-y-auto border-b border-line">
         {!copy.snapshots.length && <p className="px-3 py-2 text-[11px] text-ink-faint">Save the current settings under a name to come back to them.</p>}
         {copy.snapshots.map((s) => (
-          <div key={s.id} className="group flex cursor-pointer items-center gap-1 px-2 py-1 text-xs text-ink-dim hover:bg-[#2e2e2e] hover:text-ink"
+          <div key={s.id} className="group flex cursor-pointer items-center gap-1 px-2 py-1 text-xs text-ink-dim hover:bg-hover hover:text-ink"
             onMouseEnter={() => preview(s.recipe)} onClick={() => { preview(null); e.restoreSnapshot(s.id); }}>
             {editing === s.id ? (
               <input autoFocus className="input min-w-0 flex-1" value={name} onClick={(ev) => ev.stopPropagation()} onChange={(ev) => setName(ev.target.value)}
@@ -64,7 +64,7 @@ export function HistoryPanel() {
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {copy.steps.map((s, i) => ({ s, i })).reverse().map(({ s, i }) => (
           <div key={i}
-            className={`group flex cursor-pointer items-center gap-1 px-2 py-[3px] text-xs ${i === copy.index ? 'bg-[#3a3a3a] text-white' : i > copy.index ? 'text-ink-faint hover:bg-[#2e2e2e]' : 'text-ink-dim hover:bg-[#2e2e2e] hover:text-ink'}`}
+            className={`group flex cursor-pointer items-center gap-1 px-2 py-[3px] text-xs ${i === copy.index ? 'bg-active text-strong' : i > copy.index ? 'text-ink-faint hover:bg-hover' : 'text-ink-dim hover:bg-hover hover:text-ink'}`}
             onMouseEnter={() => preview(i === copy.index ? null : s.recipe)}
             onClick={() => { preview(null); e.jump(i); }}
             title={new Date(s.t).toLocaleTimeString()}>
@@ -94,8 +94,8 @@ export function SnapshotDialog() {
         <h2 className="mb-3 text-sm font-medium">Create snapshot</h2>
         <input autoFocus className="input w-full" placeholder={dateName()} value={name} onChange={(e) => setName(e.target.value)} />
         <div className="mt-4 flex justify-end gap-2">
-          <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-[#333]" onClick={close}>Cancel</button>
-          <button className="rounded bg-[#e0e0e0] px-3 py-1.5 text-xs font-medium text-black hover:bg-white" onClick={save}>Create</button>
+          <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+          <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi" onClick={save}>Create</button>
         </div>
       </div>
     </div>

@@ -8,6 +8,17 @@ export type CropGuide = 'thirds' | 'golden' | 'spiral' | 'diagonals' | 'grid' | 
 export const CROP_GUIDES: CropGuide[] = ['thirds', 'golden', 'spiral', 'diagonals', 'grid', 'triangles'];
 export type CompareMode = 'off' | 'split' | 'side';
 
+/** Brush settings (shared by all brush components; each stroke stores its own copy). */
+export interface BrushSettings {
+  /** Radius as a fraction of the long edge. */
+  size: number;
+  feather: number;
+  flow: number;
+  density: number;
+  autoMask: boolean;
+  erase: boolean;
+}
+
 export interface Histogram {
   r: Uint32Array;
   g: Uint32Array;
@@ -34,6 +45,10 @@ interface UiState {
   tool: Tool;
   curveChannel: CurveChannel;
   exportOpen: boolean;
+  /** Batch export dialog (the selection). */
+  batchExportOpen: boolean;
+  settingsOpen: boolean;
+  shortcutsOpen: boolean;
   histogram: Histogram | null;
   readout: PixelReadout | null;
   fps: number;
@@ -48,7 +63,7 @@ interface UiState {
   gradingLayout: '3up' | '1up';
   createPresetOpen: boolean;
   copyPaste: null | 'copy' | 'paste';
-  clipboard: { groups: PresetGroup[]; recipe: Recipe } | null;
+  clipboard: { groups: PresetGroup[]; recipe: Recipe; isRaw?: boolean } | null;
   /** Bumped when a background analysis (noise, lens profile, CA) changes the render inputs. */
   analysisTick: number;
   leftTab: 'presets' | 'history';
@@ -72,6 +87,20 @@ interface UiState {
   detailFocus: boolean;
   /** The view of the last rendered frame (overlays draw with exactly this). */
   view: { scale: number; cx: number; cy: number; areaW: number } | null;
+  /** Masking mode (key M): the masks panel and on-canvas mask handles. */
+  masksOpen: boolean;
+  selectedMask: string | null;
+  selectedComp: string | null;
+  /** Mask overlay (key O) and its look. */
+  maskOverlay: boolean;
+  maskOverlayMode: 'color' | 'bw';
+  maskOverlayColor: [number, number, number];
+  maskOverlayOpacity: number;
+  /** Overlay shown temporarily (while painting or dragging a mask handle). */
+  maskOverlayTemp: boolean;
+  brush: BrushSettings;
+  /** Eyedropper for the selected colour-range component. */
+  maskPick: boolean;
   set(p: Partial<UiState>): void;
 }
 
@@ -84,6 +113,9 @@ export const useUi = create<UiState>((set) => ({
   tool: 'none',
   curveChannel: 'rgb',
   exportOpen: false,
+  batchExportOpen: false,
+  settingsOpen: false,
+  shortcutsOpen: false,
   histogram: null,
   readout: null,
   fps: 0,
@@ -111,5 +143,15 @@ export const useUi = create<UiState>((set) => ({
   snapshotDialog: false,
   detailFocus: false,
   view: null,
+  masksOpen: false,
+  selectedMask: null,
+  selectedComp: null,
+  maskOverlay: false,
+  maskOverlayMode: 'color',
+  maskOverlayColor: [1, 0.15, 0.15],
+  maskOverlayOpacity: 0.5,
+  maskOverlayTemp: false,
+  brush: { size: 0.03, feather: 50, flow: 100, density: 100, autoMask: false, erase: false },
+  maskPick: false,
   set: (p) => set(p),
 }));

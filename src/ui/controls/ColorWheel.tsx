@@ -52,7 +52,7 @@ export function ColorWheel({ value, size, label, onChange, onCommit }: Props) {
         aria-label={`${label} wheel`}
         aria-valuetext={`hue ${Math.round(value.hue)}°, saturation ${Math.round(value.sat)}`}
         tabIndex={0}
-        className="relative cursor-crosshair touch-none rounded-full outline-none focus-visible:ring-1 focus-visible:ring-[#888]"
+        className="relative cursor-crosshair touch-none rounded-full outline-none focus-visible:ring-1 focus-visible:ring-edge"
         style={{ width: size, height: size, background: `radial-gradient(circle closest-side, #8a8a8a 0%, rgba(138,138,138,0) 100%), ${CONIC}` }}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);

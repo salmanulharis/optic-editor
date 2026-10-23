@@ -20,6 +20,7 @@ import {
   type Recipe,
   type Wheel,
 } from './schema';
+import { parseMasks } from './masks';
 
 export function serializeRecipe(r: Recipe): string {
   return JSON.stringify(r);
@@ -72,7 +73,12 @@ function migrateV2toV3(src: Json): Json {
   return { ...src, version: 3, detail: d.detail, effects: d.effects, lens: d.lens, geometry: d.geometry, crop: d.crop };
 }
 
-const MIGRATIONS: Record<number, (j: Json) => Json> = { 1: migrateV1toV2, 2: migrateV2toV3 };
+/** v3 → v4: local adjustments did not exist; no masks renders exactly as before. */
+function migrateV3toV4(src: Json): Json {
+  return { ...src, version: 4, masks: [] };
+}
+
+const MIGRATIONS: Record<number, (j: Json) => Json> = { 1: migrateV1toV2, 2: migrateV2toV3, 3: migrateV3toV4 };
 
 export function migrate(src: Json): Json {
   let v = num(src.version, 1);
@@ -375,6 +381,7 @@ export function parseGroups(src: Json, base: Recipe = defaultRecipe()): Recipe {
       rotate90: (Math.round(rot) & 3) as 0 | 1 | 2 | 3,
     };
   }
+  if (has('masks')) r.masks = parseMasks(src.masks);
   if (has('output')) r.output = { colorSpace: obj(src.output).colorSpace === 'srgb' ? 'srgb' : 'display-p3' };
   if (has('appliedPreset')) {
     const a = obj(src.appliedPreset);

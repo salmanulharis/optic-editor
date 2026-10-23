@@ -4,6 +4,11 @@ import { activeCopy, useEdit } from '../state/editStore';
 import { type LoadedImage, useImage } from '../state/imageStore';
 import { type CompareMode, useUi } from '../state/uiStore';
 import { ExportProgress } from '../ui/export/ExportDialog';
+import { ImportProgress } from '../ui/library/ImportDialog';
+import { BatchMenu, BatchProgress } from '../ui/library/BatchMenu';
+import { PwaStatus } from '../ui/PwaStatus';
+import { useLibrary } from '../state/libraryStore';
+import { openPhoto } from '../library/open';
 import { openFile } from './openFile';
 
 export function badgeFor(img: LoadedImage): string {
@@ -22,7 +27,7 @@ const Btn = (p: { onClick(): void; children: ReactNode; title?: string; active?:
     title={p.title}
     disabled={p.disabled}
     onClick={p.onClick}
-    className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${p.active ? 'bg-[#3a3a3a] text-white' : 'text-ink hover:bg-[#333]'}`}
+    className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${p.active ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
   >
     {p.children}
   </button>
@@ -48,7 +53,7 @@ function CompareControls({ disabled }: { disabled: boolean }) {
       {mode !== 'off' && (
         <>
           <select
-            className="max-w-[150px] rounded border border-line bg-[#2d2d2d] px-1 py-0.5 text-[11px] text-ink outline-none"
+            className="max-w-[150px] rounded border border-line bg-raise px-1 py-0.5 text-[11px] text-ink outline-none"
             value={source}
             title="What the Before side shows"
             onChange={(e) => set({ compareSource: e.target.value })}
@@ -88,6 +93,7 @@ export function TopBar() {
   const canUndo = useEdit((s) => activeCopy(s).index > 0 || s.recipe !== s.committed);
   const canRedo = useEdit((s) => { const c = activeCopy(s); return c.index < c.steps.length - 1; });
   const cropMode = useUi((s) => s.cropMode);
+  const masksOpen = useUi((s) => s.masksOpen);
   const pct = Math.round((zoom === 'fit' ? fitScale : zoom) * 100);
   const setZoom = (z: 'fit' | number) => {
     if (!image) return;
@@ -107,10 +113,25 @@ export function TopBar() {
       ].filter(Boolean)
     : [];
 
+  const view = useLibrary((s) => s.view);
+  const libActive = useLibrary((s) => s.active);
+  const toEditor = () => {
+    const id = useImage.getState().photoId ?? libActive;
+    if (id && useImage.getState().photoId !== id) void openPhoto(id);
+    else useLibrary.getState().set({ view: 'editor' });
+  };
   return (
     <header className="flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
       <span className="px-1 text-sm font-semibold tracking-wide text-ink">Optic</span>
-      <Btn onClick={() => inputRef.current?.click()} title="Open (Ctrl/Cmd+O)">Open</Btn>
+      <div className="flex rounded border border-line p-0.5" role="tablist" aria-label="View">
+        <button role="tab" aria-selected={view === 'library'} className={`rounded px-2 py-0.5 text-xs ${view === 'library' ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
+          onClick={() => useLibrary.getState().set({ view: 'library' })} title="Library (G)">Library</button>
+        <button role="tab" aria-selected={view === 'editor'} className={`rounded px-2 py-0.5 text-xs ${view === 'editor' ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
+          onClick={toEditor} title="Edit (E)">Edit</button>
+      </div>
+      <ImportProgress />
+      <BatchProgress />
+      {view === 'editor' && <Btn onClick={() => inputRef.current?.click()} title="Open a photo (Ctrl/Cmd+O): imports it into the library">Open</Btn>}
       <input
         ref={inputRef}
         type="file"
@@ -122,7 +143,8 @@ export function TopBar() {
           e.target.value = '';
         }}
       />
-      {image && (
+      {view === 'library' && <div className="flex-1" />}
+      {view === 'editor' && image && (
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
           <span className="truncate text-xs text-ink" title={image.fileName}>{image.fileName}</span>
           <span className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-ink-dim" title={`Decoded with ${image.decoder}`}>
@@ -131,8 +153,13 @@ export function TopBar() {
           <span className="hidden truncate text-[11px] text-ink-faint lg:inline">{infoParts.join(' · ')}</span>
         </div>
       )}
-      {!image && <div className="flex-1" />}
+      {view === 'editor' && !image && <div className="flex-1" />}
+      <PwaStatus />
+      <button className="rounded px-1.5 py-1 text-sm text-ink-dim hover:bg-hover hover:text-ink" title="Settings (Ctrl/Cmd+,)" aria-label="Settings" onClick={() => useUi.getState().set({ settingsOpen: true })}>⚙</button>
+      <button className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-hover hover:text-ink" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" onClick={() => useUi.getState().set({ shortcutsOpen: true })}>?</button>
       <ExportProgress />
+      {view === 'editor' && (<>
+      <BatchMenu />
       <div className="flex items-center gap-0.5 border-l border-line pl-2">
         <Btn onClick={() => useEdit.getState().undo()} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)">↶</Btn>
         <Btn onClick={() => useEdit.getState().redo()} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)">↷</Btn>
@@ -144,14 +171,15 @@ export function TopBar() {
         <span className="w-11 text-right text-[11px] tabular-nums text-ink-faint">{image ? `${pct}%` : ''}</span>
       </div>
       <div className="flex items-center gap-0.5 border-l border-line pl-2">
-        <Btn onClick={() => useUi.getState().set({ cropMode: !cropMode, tool: 'none' })} active={cropMode} disabled={!image} title="Crop & straighten (R)">Crop</Btn>
+        <Btn onClick={() => useUi.getState().set({ cropMode: !cropMode, tool: 'none', masksOpen: false })} active={cropMode} disabled={!image} title="Crop & straighten (R)">Crop</Btn>
+        <Btn onClick={() => useUi.getState().set({ masksOpen: !masksOpen, cropMode: false, tool: 'none', maskPick: false })} active={masksOpen} disabled={!image} title="Masks: local adjustments (M)">Masks</Btn>
       </div>
       <CompareControls disabled={!image} />
       <div className="flex items-center gap-1 border-l border-line pl-2">
         <button
           disabled={!image}
           title="Before / After (hold \\)"
-          className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${showBefore ? 'bg-[#3a3a3a] text-white' : 'text-ink hover:bg-[#333]'}`}
+          className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${showBefore ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
           onPointerDown={() => useUi.getState().set({ showBefore: true })}
           onPointerUp={() => useUi.getState().set({ showBefore: false })}
           onPointerLeave={() => showBefore && useUi.getState().set({ showBefore: false })}
@@ -161,12 +189,13 @@ export function TopBar() {
         <button
           disabled={!image}
           onClick={() => useUi.getState().set({ exportOpen: true })}
-          className="rounded bg-[#e0e0e0] px-3 py-1 text-xs font-medium text-black hover:bg-white disabled:opacity-30"
+          className="rounded bg-accent px-3 py-1 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-30"
           title="Export (Ctrl/Cmd+E)"
         >
           Export
         </button>
       </div>
+      </>)}
     </header>
   );
 }

@@ -18,6 +18,7 @@ import { Pipeline } from '../../pipeline/Pipeline';
 import { createContext, getCaps } from '../../pipeline/gl/context';
 import { type SourceTexture, createMipmappedFromRGB, createRenderTarget, createTexture, deleteRenderTarget, uploadRGB } from '../../pipeline/gl/texture';
 import { lutRegistry } from '../../pipeline/lutRegistry';
+import { type MaskBitmap, maskRegistry } from '../../pipeline/maskRegistry';
 import type { LutData } from '../lut/lut';
 import type { ImageModel, OutputTarget } from '../../pipeline/types';
 import type { Recipe } from '../../recipe/schema';
@@ -32,9 +33,13 @@ export interface ExportRenderInput {
   proxy: FloatImage;
   /** LUTs referenced by the recipe (the worker has no access to the UI's registry). */
   luts: LutData[];
+  /** AI mask bitmaps referenced by the recipe's masks (same reason). */
+  masks?: MaskBitmap[];
   image: ImageModel;
   recipe: Recipe;
   target: OutputTarget;
+  /** Tile size (smaller on memory-constrained devices). */
+  tile?: number;
 }
 
 export interface RenderOptions {
@@ -59,6 +64,7 @@ export async function renderFullResolution(
   const caps = getCaps(gl);
   const pipeline = new Pipeline(gl, caps.floatLinear, { intermediate: 'rgba32f' });
   for (const l of input.luts) lutRegistry.set(l);
+  for (const m of input.masks ?? []) maskRegistry.set(m);
   const { width: W, height: H, data } = input.full;
   const view1: [number, number, number, number, number, number, number, number, number] = [1, 0, 0, 0, 1, 0, 0, 0, 1];
   const probe = pipeline.context({ image: input.image, recipe: input.recipe, target: input.target, source: { tex: null as unknown as WebGLTexture, region: { x: 0, y: 0, w: W, h: H }, scale: 1, mipmapped: false, linear: false }, view: view1 });
@@ -73,7 +79,7 @@ export async function renderFullResolution(
   const OW = geo.outW, OH = geo.outH;
   const pad = pipeline.padding(probe, stages);
   // A multiple of 4 (like the padding): helper grids stay aligned with output pixels in every tile.
-  const tile = Math.max(64, Math.floor(Math.min(opts.tile ?? TILE, caps.maxTextureSize - 2 * (pad + MARGIN)) / 4) * 4);
+  const tile = Math.max(64, Math.floor(Math.min(opts.tile ?? input.tile ?? TILE, caps.maxTextureSize - 2 * (pad + MARGIN)) / 4) * 4);
   const out = new Uint16Array(OW * OH * 3);
   let srcTex: WebGLTexture | null = null;
   let srcW = 0, srcH = 0;

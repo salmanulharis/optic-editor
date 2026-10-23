@@ -61,6 +61,8 @@ export interface FrameSpec {
   overlay: boolean;
   visualize?: boolean;
   maskView?: 'sharpen';
+  /** Local-adjustment mask overlay. */
+  maskOverlay?: OutputTarget['maskOverlay'];
   /** Render at half resolution (fast feedback while dragging). */
   draft?: boolean;
   compare?: CompareSpec | null;
@@ -103,6 +105,8 @@ export class ViewRenderer {
   private small: RenderTargetTex | null = null;
   private pixel: RenderTargetTex;
   private draftRt: RenderTargetTex | null = null;
+  /** Encoded RGB around the photo (the theme's app background). */
+  bg: [number, number, number] = [BG, BG, BG];
 
   constructor(readonly canvas: HTMLCanvasElement) {
     this.gl = createContext(canvas, displayIsP3());
@@ -165,10 +169,11 @@ export class ViewRenderer {
     return { x: v.cx - w / 2, y: v.cy - h / 2, w, h };
   }
 
-  previewTarget(recipe: Recipe, overlay: boolean, visualizePointColor = false, maskView?: 'sharpen'): OutputTarget {
+  previewTarget(recipe: Recipe, overlay: boolean, visualizePointColor = false, maskView?: 'sharpen', maskOverlay?: OutputTarget['maskOverlay']): OutputTarget {
     return {
       visualizePointColor,
       maskView,
+      maskOverlay: maskOverlay ?? null,
       mode: 'encoded',
       // Preview gamut: the recipe's choice when the screen can show it, else sRGB.
       space: this.caps.p3 ? recipe.output.colorSpace : 'srgb',
@@ -218,12 +223,12 @@ export class ViewRenderer {
   }
 
   /** False while the shaders this frame needs are still compiling (the caller retries next frame). */
-  canRender(f: Pick<FrameSpec, 'recipe' | 'overlay' | 'visualize' | 'maskView' | 'compare'>): boolean {
+  canRender(f: Pick<FrameSpec, 'recipe' | 'overlay' | 'visualize' | 'maskView' | 'compare' | 'maskOverlay'>): boolean {
     if (!this.image || !this.proxy) return true;
     const ready = (recipe: Recipe) => this.pipeline.isReady({
       image: this.image!.model,
       recipe,
-      target: this.previewTarget(recipe, f.overlay, f.visualize, f.maskView),
+      target: this.previewTarget(recipe, f.overlay, f.visualize, f.maskView, recipe === f.recipe ? f.maskOverlay : null),
       source: this.proxy!,
     });
     return ready(f.recipe) && (!f.compare || ready(f.compare.before)) && this.pipeline.programs.isReady(BLIT_FS);
@@ -233,7 +238,7 @@ export class ViewRenderer {
     const gl = this.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.clearColor(BG, BG, BG, 1);
+    gl.clearColor(this.bg[0], this.bg[1], this.bg[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
@@ -265,7 +270,7 @@ export class ViewRenderer {
       source,
       image: this.image!.model,
       recipe,
-      target: this.previewTarget(recipe, f.overlay, f.visualize, f.maskView),
+      target: this.previewTarget(recipe, f.overlay, f.visualize, f.maskView, recipe === f.recipe ? f.maskOverlay : null),
       mapSource: this.proxy!,
       view: this.viewMatrix(v, area.w, area.h),
       width: area.w,
@@ -273,7 +278,7 @@ export class ViewRenderer {
       origin: [area.x, area.y],
       scissor,
       framebuffer: fb,
-      background: [BG, BG, BG, 1],
+      background: [this.bg[0], this.bg[1], this.bg[2], 1],
       lod: Math.max(0, Math.log2(texelsPerPx)),
       cache: slot,
       draftMaps: !!f.draft,

@@ -74,11 +74,12 @@ export function SubHead({ children, onReset }: { children: ReactNode; onReset?()
 }
 
 /** Small select styled like the other controls. */
-export function Select<T extends string>({ value, options, onChange, title }: { value: T; options: Array<[T, string]>; onChange(v: T): void; title?: string }) {
+export function Select<T extends string>({ value, options, onChange, title, label }: { value: T; options: Array<[T, string]>; onChange(v: T): void; title?: string; label?: string }) {
   return (
     <select
       title={title}
-      className="rounded border border-line bg-[#2d2d2d] px-1.5 py-0.5 text-xs text-ink outline-none"
+      aria-label={label ?? title}
+      className="rounded border border-line bg-raise px-1.5 py-0.5 text-xs text-ink outline-none"
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
     >
@@ -93,7 +94,7 @@ export function ToolButton(props: { active?: boolean; onClick(): void; children:
       title={props.title}
       onClick={props.onClick}
       className={`rounded border px-2 py-1 text-xs ${
-        props.active ? 'border-[#777] bg-[#3a3a3a] text-white' : 'border-line bg-[#2d2d2d] text-ink hover:bg-[#333]'
+        props.active ? 'border-edge bg-active text-strong' : 'border-line bg-raise text-ink hover:bg-hover'
       } ${props.className ?? ''}`}
     >
       {props.children}

@@ -48,7 +48,7 @@ export function CalibrationPanel() {
           </p>
           <div className="grid grid-cols-3 gap-1">
             {m.map((v, i) => (
-              <div key={i} className="rounded border border-line bg-[#2a2a2a] px-1">
+              <div key={i} className="rounded border border-line bg-raise px-1">
                 <NumberInput value={v} min={-4} max={4} decimals={3} ariaLabel={`Matrix ${Math.floor(i / 3) + 1},${(i % 3) + 1}`}
                   className="w-full"
                   onCommit={(x) => {

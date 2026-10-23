@@ -15,7 +15,8 @@
 import { create } from 'zustand';
 import { type Recipe, type SectionKey, defaultRecipe } from '../recipe/schema';
 import { deserializeRecipe } from '../recipe/serialize';
-import { dbGet, dbPut } from '../storage/db';
+import { catalog } from '../library/db';
+import { dbGet } from '../storage/db';
 import { describeChange } from './describe';
 
 const MAX_STEPS = 500;
@@ -103,21 +104,48 @@ export function activeCopy(s: Pick<EditState, 'copies' | 'active'>): VirtualCopy
 // ---------------------------------------------------------------------------
 
 let saveTimer: number | undefined;
+const savedListeners = new Set<(doc: DocRecord) => void>();
+
+/** Called after every save of the open photo's document (the library mirrors the recipe). */
+export function onDocSaved(fn: (doc: DocRecord) => void) {
+  savedListeners.add(fn);
+  return () => savedListeners.delete(fn);
+}
+
+export async function saveDoc(doc: DocRecord) {
+  await catalog.docs.put(doc);
+  savedListeners.forEach((f) => f(doc));
+}
+
+function saveNow() {
+  window.clearTimeout(saveTimer);
+  saveTimer = undefined;
+  const s = useEdit.getState();
+  if (!s.docKey) return;
+  const doc: DocRecord = { key: s.docKey, version: DOC_VERSION, fileName: docFileName, updated: Date.now(), active: s.active, copies: s.copies };
+  saveDoc(doc).catch((e) => console.warn('[optic] history not saved', e));
+}
+
 function scheduleSave() {
   const { docKey } = useEdit.getState();
   if (!docKey || typeof window === 'undefined') return;
   window.clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(() => {
-    const s = useEdit.getState();
-    if (!s.docKey) return;
-    const doc: DocRecord = { key: s.docKey, version: DOC_VERSION, fileName: docFileName, updated: Date.now(), active: s.active, copies: s.copies };
-    dbPut('docs', doc).catch((e) => console.warn('[optic] history not saved', e));
-  }, 400);
+  saveTimer = window.setTimeout(saveNow, 400);
 }
 let docFileName = '';
 
+/** Write a pending save right away (page hidden / unloading). */
+export function flushSave() {
+  if (saveTimer !== undefined) saveNow();
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushSave);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flushSave());
+}
+
+/** The stored document of a photo (catalog; documents from before the catalog are read once). */
 export async function loadDoc(key: string): Promise<DocRecord | null> {
-  const d = await dbGet<DocRecord>('docs', key);
+  const d = (await catalog.docs.get(key).catch(() => undefined)) ?? (await dbGet<DocRecord>('docs', key));
   if (!d || !Array.isArray(d.copies) || !d.copies.length) return null;
   try {
     // Recipes are migrated like any other stored recipe.

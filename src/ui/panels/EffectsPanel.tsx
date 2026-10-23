@@ -43,6 +43,7 @@ export function EffectsPanel() {
       <div className="mb-1 flex items-center justify-between text-xs text-ink-dim">
         <span>Type</span>
         <Select<GrainType>
+          label="Grain type"
           value={e.grain.type}
           options={[['custom', 'Custom'], ...Object.entries(GRAIN_TYPES).map(([k, v]) => [k, v.label] as [GrainType, string])]}
           onChange={(t) => {
@@ -73,6 +74,7 @@ export function EffectsPanel() {
       <div className="mb-1 flex items-center justify-between text-xs text-ink-dim">
         <span>Style</span>
         <Select<VignetteStyle>
+          label="Vignette style"
           value={e.vignette.style}
           options={[['highlight', 'Highlight priority'], ['color', 'Color priority'], ['paint', 'Paint overlay']]}
           onChange={(v) => s.apply({ vignette: { ...cur().vignette, style: v } })}

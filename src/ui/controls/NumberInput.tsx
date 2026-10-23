@@ -30,7 +30,7 @@ export function NumberInput({ value, min, max, decimals, onCommit, className, ar
   return (
     <input
       aria-label={ariaLabel}
-      className={`w-12 bg-transparent text-right text-xs tabular-nums text-ink outline-none focus:bg-[#1c1c1c] focus:ring-1 focus:ring-[#555] rounded px-0.5 ${className ?? ''}`}
+      className={`w-12 bg-transparent text-right text-xs tabular-nums text-ink outline-none focus:bg-[#1c1c1c] focus:ring-1 focus:ring-edge rounded px-0.5 ${className ?? ''}`}
       value={text}
       inputMode="decimal"
       onFocus={(e) => { setEditing(true); e.currentTarget.select(); }}

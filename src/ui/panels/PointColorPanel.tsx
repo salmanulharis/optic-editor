@@ -51,7 +51,7 @@ export function PointColorPanel() {
           {pc.points.map((q, i) => (
             <button key={i} title={`Point ${i + 1}`} onClick={() => setSel(i)}
               onContextMenu={(e) => { e.preventDefault(); remove(i); }}
-              className={`h-6 w-6 rounded-full border-2 ${i === idx ? 'border-white' : 'border-[#444]'}`} style={{ background: swatch(q) }} />
+              className={`h-6 w-6 rounded-full border-2 ${i === idx ? 'border-white' : 'border-edge'}`} style={{ background: swatch(q) }} />
           ))}
         </div>
       )}

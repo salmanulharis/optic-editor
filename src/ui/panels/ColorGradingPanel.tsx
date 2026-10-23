@@ -37,7 +37,7 @@ export function ColorGradingPanel() {
       <div className="mb-2 flex items-center justify-end gap-1 text-[11px]">
         {(['3up', '1up'] as const).map((l) => (
           <button key={l} onClick={() => useUi.getState().set({ gradingLayout: l })}
-            className={`rounded px-1.5 py-0.5 ${layout === l ? 'bg-[#3a3a3a] text-white' : 'text-ink-dim hover:text-ink'}`}>
+            className={`rounded px-1.5 py-0.5 ${layout === l ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}>
             {l === '3up' ? '3-up' : '1-up'}
           </button>
         ))}
@@ -51,7 +51,7 @@ export function ColorGradingPanel() {
         <>
           <div className="mb-2 flex rounded border border-line text-[11px]">
             {WHEELS.map(([k, l]) => (
-              <button key={k} onClick={() => setOne(k)} className={`flex-1 py-1 ${one === k ? 'bg-[#3a3a3a] text-white' : 'text-ink-dim hover:text-ink'}`}>{l}</button>
+              <button key={k} onClick={() => setOne(k)} className={`flex-1 py-1 ${one === k ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}>{l}</button>
             ))}
           </div>
           {wheelBlock(one, WHEELS.find((w) => w[0] === one)![1], 168)}

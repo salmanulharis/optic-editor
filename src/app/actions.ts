@@ -25,7 +25,7 @@ function current(): { img: LoadedImage; recipe: Recipe } | null {
 }
 
 /** Temperature/tint (recipe units) that make the given source-space colour neutral. */
-function wbForNeutral(img: LoadedImage, rgb: Vec3) {
+export function wbForNeutral(img: Pick<LoadedImage, 'color'>, rgb: Vec3) {
   if (img.color.kind === 'raw') {
     const tt = neutralToTempTint(img.color.profile, rgb);
     return { temperature: Math.round(Math.min(50000, Math.max(2000, tt.temperature))), tint: Math.round(Math.min(150, Math.max(-150, tt.tint))) };

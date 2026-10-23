@@ -4,3 +4,6 @@ dist/
 .DS_Store
 # Personal test photo (see CLAUDE.md); kept local, not published.
 sample-files/IMG_7040.jpeg
+public/models/
+test-results/
+playwright-report/

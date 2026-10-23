@@ -1,13 +1,13 @@
 /**
  * IndexedDB persistence for user presets, imported LUTs (structured-clone values, so LUT
- * Float32Arrays are stored as-is) and per-photo edit documents (history, snapshots, virtual
- * copies). Small conveniences (favourites, recents) live in localStorage.
+ * Float32Arrays are stored as-is), per-photo edit documents (history, snapshots, virtual
+ * copies) and computed AI mask bitmaps. Small conveniences (favourites, recents) live in localStorage.
  * Every call fails soft: private windows / blocked storage just mean nothing is remembered.
  */
 
 const DB_NAME = 'optic';
-const DB_VERSION = 2;
-export type StoreName = 'presets' | 'luts' | 'docs';
+const DB_VERSION = 3;
+export type StoreName = 'presets' | 'luts' | 'docs' | 'aimasks';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -19,6 +19,7 @@ function open(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('presets')) db.createObjectStore('presets', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('luts')) db.createObjectStore('luts', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('docs')) db.createObjectStore('docs', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('aimasks')) db.createObjectStore('aimasks', { keyPath: 'key' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

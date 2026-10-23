@@ -36,6 +36,7 @@ export function CropPanel() {
       <div className="mb-1.5 flex items-center gap-1.5 text-xs text-ink-dim">
         <span className="w-12">Aspect</span>
         <Select
+          label="Aspect ratio"
           value={known ? c.aspect : 'custom'}
           options={[...ASPECTS, ['custom', c.aspect.startsWith('custom:') ? `Custom ${c.aspect.slice(7).replace(':', ' : ')}` : 'Custom…']]}
           onChange={(v) => (v === 'custom' ? setCropAspect(`custom:${custom[0]}:${custom[1]}`) : setCropAspect(v))}
@@ -68,7 +69,7 @@ export function CropPanel() {
       <div className="mt-2 text-[11px] tabular-nums text-ink">{cropSizeLabel(recipe)}</div>
       <div className="mt-2 flex justify-between">
         <button className="text-[11px] text-ink-faint hover:text-ink" onClick={resetCrop}>Reset crop</button>
-        <button className="rounded bg-[#e0e0e0] px-3 py-1 text-xs font-medium text-black hover:bg-white" onClick={() => useUi.getState().set({ cropMode: false, tool: 'none' })}>
+        <button className="rounded bg-accent px-3 py-1 text-xs font-medium text-on-accent hover:bg-accent-hi" onClick={() => useUi.getState().set({ cropMode: false, tool: 'none' })}>
           Done
         </button>
       </div>

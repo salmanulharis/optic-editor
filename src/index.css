@@ -2,8 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme tokens (space-separated RGB for Tailwind's alpha syntax). The photo canvas background
+ * follows --c-app. "light" is a neutral light grey (no colour cast that could bias judgement).
+ */
 :root {
   color-scheme: dark;
+  --c-app: 28 28 28;
+  --c-panel: 38 38 38;
+  --c-line: 51 51 51;
+  --c-ink: 212 212 212;
+  --c-ink-dim: 174 174 174;
+  --c-ink-faint: 150 150 150; /* ≥ 4.5:1 on every dark surface (WCAG AA) */
+  --c-strong: 255 255 255;
+  --c-raise: 45 45 45;
+  --c-sunk: 31 31 31;
+  --c-hover: 51 51 51;
+  --c-active: 58 58 58;
+  --c-edge: 110 110 110;
+  --c-accent: 224 224 224;
+  --c-accent-hi: 255 255 255;
+  --c-on-accent: 0 0 0;
+  --c-meter: 187 187 187;
+}
+
+:root[data-theme='darker'] {
+  --c-app: 12 12 12;
+  --c-panel: 22 22 22;
+  --c-line: 38 38 38;
+  --c-raise: 30 30 30;
+  --c-sunk: 16 16 16;
+  --c-hover: 38 38 38;
+  --c-active: 46 46 46;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --c-app: 168 168 168;
+  --c-panel: 206 206 206;
+  --c-line: 172 172 172;
+  --c-ink: 24 24 24;
+  --c-ink-dim: 52 52 52;
+  --c-ink-faint: 72 72 72;
+  --c-strong: 0 0 0;
+  --c-raise: 224 224 224;
+  --c-sunk: 186 186 186;
+  --c-hover: 192 192 192;
+  --c-active: 180 180 180;
+  --c-edge: 120 120 120;
+  --c-accent: 40 40 40;
+  --c-accent-hi: 0 0 0;
+  --c-on-accent: 255 255 255;
+  --c-meter: 64 64 64;
 }
 
 html,
@@ -12,20 +62,57 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: #1c1c1c;
+  background: rgb(var(--c-app));
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @layer components {
   .input {
-    @apply rounded border border-line bg-[#2d2d2d] px-1.5 py-1 text-xs text-ink outline-none focus:border-[#666];
+    @apply rounded border border-line bg-raise px-1.5 py-1 text-xs text-ink outline-none focus:border-edge;
   }
+}
+
+/* Visible focus for keyboard users everywhere (mouse clicks don't show it). */
+:focus-visible {
+  outline: 2px solid rgb(var(--c-ink-dim));
+  outline-offset: 1px;
+}
+
+/* Reduced motion: the system setting, or forced on in Settings. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 /* Neutral scrollbars (no colour that could bias judgement). */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #444 transparent;
+  scrollbar-color: rgb(var(--c-edge)) transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

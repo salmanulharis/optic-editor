@@ -20,6 +20,7 @@ import { colorGradingStage } from './55_colorGrading';
 import { presenceStage } from './60_presence';
 import { lutStage } from './70_lut';
 import { lookStage } from './75_look';
+import { localStage } from './78_localAdjustments';
 import { glowStage } from './80_halationBloom';
 import { vignetteStage } from './82_vignette';
 import { grainStage } from './84_grain';
@@ -47,6 +48,7 @@ export const STAGES: readonly Stage[] = [
   presenceStage,
   lutStage,
   lookStage,
+  localStage, // spatial: masks (local adjustments)
   glowStage,
   vignetteStage, // post-crop
   grainStage, // late, so the grain is not colour-graded

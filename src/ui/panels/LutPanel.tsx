@@ -44,12 +44,12 @@ export function LutPanel() {
       onReset={() => s.apply({ ...defaultRecipe().lut, enabled: l.enabled })}
     >
       <div className="flex items-center gap-1.5">
-        <select className="input min-w-0 flex-1" value={l.id ?? ''} onChange={(e) => s.apply({ id: e.target.value || null })}>
+        <select className="input min-w-0 flex-1" aria-label="LUT" value={l.id ?? ''} onChange={(e) => s.apply({ id: e.target.value || null })}>
           <option value="">None</option>
           {luts.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.size}³)</option>)}
           {l.id && !current && <option value={l.id}>Missing LUT ({l.id})</option>}
         </select>
-        <button className="rounded border border-line bg-[#2d2d2d] px-2 py-1 text-xs hover:bg-[#333] disabled:opacity-40"
+        <button className="rounded border border-line bg-raise px-2 py-1 text-xs hover:bg-hover disabled:opacity-40"
           disabled={busy} onClick={() => fileRef.current?.click()}>
           {busy ? '…' : 'Import'}
         </button>
@@ -59,7 +59,7 @@ export function LutPanel() {
       {error && <div className="mt-1 rounded bg-[#3a2424] px-2 py-1 text-[11px] text-[#f0b0b0]">Could not import: {error}</div>}
       {l.id && !current && <div className="mt-1 text-[11px] text-[#e0b070]">This LUT is not in your library; it is ignored.</div>}
       <label className="mt-2 block text-[11px] text-ink-dim">Input space</label>
-      <select className="input mt-0.5 w-full" value={l.inputSpace} onChange={(e) => s.apply({ inputSpace: e.target.value as LutInputSpace })}>
+      <select className="input mt-0.5 w-full" aria-label="LUT input space" value={l.inputSpace} onChange={(e) => s.apply({ inputSpace: e.target.value as LutInputSpace })}>
         {SPACES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
       </select>
       <div className="mt-1">

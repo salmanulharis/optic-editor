@@ -80,7 +80,7 @@ export function CurveEditor({ points: propPoints, color, onChange: emit, onCommi
     <svg
       ref={svgRef}
       viewBox={`0 0 ${SIZE + PAD * 2} ${SIZE + PAD * 2}`}
-      className="w-full touch-none select-none rounded bg-[#1f1f1f]"
+      className="w-full touch-none select-none rounded bg-sunk"
       onPointerDown={(e) => {
         const p = toLocal(e);
         let i = hitTest(p);

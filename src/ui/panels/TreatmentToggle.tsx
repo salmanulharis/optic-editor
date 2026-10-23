@@ -11,7 +11,7 @@ export function TreatmentToggle() {
       <div className="ml-auto flex rounded border border-line text-xs" title="Toggle with V">
         {(['color', 'monochrome'] as const).map((v) => (
           <button key={v} onClick={() => set(v)} aria-pressed={t === v}
-            className={`px-2.5 py-0.5 ${t === v ? 'bg-[#3a3a3a] text-white' : 'text-ink-dim hover:text-ink'}`}>
+            className={`px-2.5 py-0.5 ${t === v ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}>
             {v === 'color' ? 'Color' : 'B&W'}
           </button>
         ))}

@@ -75,6 +75,8 @@ const MAX_AGE = 240;
 
 export class GpuKit {
   private pool = new Map<string, RenderTargetTex & { fmt: Fmt; used: number }>();
+  /** Recycled targets (size|format → list), handed out again before allocating new ones. */
+  private free = new Map<string, Array<RenderTargetTex & { fmt: Fmt; used: number }>>();
   private samplers = new Map<string, Array<{ name: string; is3d: boolean }>>();
   private tick = 0;
 
@@ -104,6 +106,16 @@ export class GpuKit {
     const key = `${this.prefix}${tag}|${width}x${height}|${fmt}`;
     const cur = root.pool.get(key);
     if (cur) { cur.used = root.tick; return cur; }
+    const want = `${width}x${height}|${fmt}`;
+    const spare = root.free.get(want)?.pop();
+    if (spare) { spare.used = root.tick; root.pool.set(key, spare); return spare; }
+    // Recycled targets of other sizes / formats are leftovers of finished passes: free them before
+    // allocating, so a render's peak memory stays close to its largest pass.
+    for (const [fk, list] of root.free) {
+      if (fk === want) continue;
+      list.forEach((t) => deleteRenderTarget(this.gl, t));
+      root.free.delete(fk);
+    }
     this.gl.activeTexture(this.gl.TEXTURE0 + 15);
     const t = { ...createRenderTarget(this.gl, width, height, FORMATS[fmt], 1, isHalf(fmt) || this.floatLinear), fmt, used: root.tick };
     root.pool.set(key, t);
@@ -120,6 +132,29 @@ export class GpuKit {
     for (const [k, t] of root.pool) {
       if (k.startsWith('map:') || k.startsWith('slot:')) continue;
       if (root.tick - t.used > MAX_AGE) { deleteRenderTarget(this.gl, t); root.pool.delete(k); }
+    }
+    for (const [fk, list] of root.free) {
+      const keep = list.filter((t) => root.tick - t.used <= MAX_AGE);
+      list.filter((t) => root.tick - t.used > MAX_AGE).forEach((t) => deleteRenderTarget(this.gl, t));
+      if (keep.length) root.free.set(fk, keep); else root.free.delete(fk);
+    }
+  }
+
+  /**
+   * Make the unscoped targets (spatial helpers of an uncached render) available to later passes of
+   * any size-and-format-compatible tag. Called after each pass: its helper results are consumed, so
+   * a render's peak memory is its largest pass, not the sum of every stage's helpers. Targets of
+   * image-wide maps and cache slots are kept.
+   */
+  recycle() {
+    const root = this.root ?? this;
+    for (const [k, t] of root.pool) {
+      if (k.startsWith('map:') || k.startsWith('slot:')) continue;
+      root.pool.delete(k);
+      const fk = `${t.width}x${t.height}|${t.fmt}`;
+      const list = root.free.get(fk) ?? [];
+      list.push(t);
+      root.free.set(fk, list);
     }
   }
 
@@ -157,10 +192,45 @@ export class GpuKit {
     bumpTex(out.tex);
   }
 
+  /**
+   * Full-screen draw into several targets at once (multiple render targets): the shader writes
+   * `layout(location = k) out vec4` for output k. All targets must have the same size.
+   */
+  drawMRT(fs: string, outs: RenderTargetTex[], uniforms: Record<string, Uniform>, textures: Record<string, WebGLTexture>) {
+    const gl = this.gl;
+    // A framebuffer per draw, deleted right after: a cached one would keep its attachments alive
+    // after the pool frees them (GPU memory leak across render sizes).
+    const fbo = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    outs.forEach((o, k) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + k, gl.TEXTURE_2D, o.tex, 0));
+    const prog = this.programs.get(fs);
+    gl.useProgram(prog.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.drawBuffers(outs.map((_, k) => gl.COLOR_ATTACHMENT0 + k));
+    gl.viewport(0, 0, outs[0].width, outs[0].height);
+    let decl = this.samplers.get(fs);
+    if (!decl) { decl = declaredSamplers(fs); this.samplers.set(fs, decl); }
+    decl.forEach((sm, unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      const t = textures[sm.name] ?? this.dummy();
+      if (outs.some((o) => o.tex === t)) throw new Error(`MRT pass reads its own target (${sm.name})`);
+      gl.bindTexture(sm.is3d ? gl.TEXTURE_3D : gl.TEXTURE_2D, t);
+      gl.uniform1i(prog.loc(sm.name), unit);
+    });
+    for (const [name, v] of Object.entries(uniforms)) setUniform(gl, prog.loc(name), v);
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fbo);
+    outs.forEach((o) => bumpTex(o.tex));
+  }
+
   /** Separable Gaussian blur of all four channels (`outFmt` for the result, `fmt` in between). */
   gauss(src: TexIn, sigma: number, tag: string, fmt: Fmt = 'rgba16f', outFmt: Fmt = fmt): RenderTargetTex {
     const radius = Math.max(1, Math.ceil(sigma * 3));
-    const h = this.rt(`${tag}:h`, src.width, src.height, fmt);
+    // The horizontal intermediate only lives during this call: one shared scratch per size/format.
+    const h = this.rt('~h', src.width, src.height, fmt);
     const v = this.rt(tag, src.width, src.height, outFmt);
     const un = (dx: number, dy: number) => ({ u_dir: { t: 'v2', v: [dx, dy] }, u_sigma: { t: 'f', v: Math.max(sigma, 0.1) }, u_radius: { t: 'i', v: radius } }) as Record<string, Uniform>;
     this.draw(GAUSS_FS, h, un(1, 0), { u_src: src.tex });
@@ -171,7 +241,7 @@ export class GpuKit {
   /** Separable box mean with a (2r + 1)² window. */
   box(src: TexIn, radius: number, tag: string, fmt: Fmt = 'rgba16f', outFmt: Fmt = fmt): RenderTargetTex {
     const r = Math.max(1, Math.round(radius));
-    const h = this.rt(`${tag}:h`, src.width, src.height, fmt);
+    const h = this.rt('~h', src.width, src.height, fmt);
     const v = this.rt(tag, src.width, src.height, outFmt);
     this.draw(BOX_FS, h, { u_dir: { t: 'v2', v: [1, 0] }, u_radius: { t: 'i', v: r } }, { u_src: src.tex });
     this.draw(BOX_FS, v, { u_dir: { t: 'v2', v: [0, 1] }, u_radius: { t: 'i', v: r } }, { u_src: h.tex });
@@ -189,5 +259,7 @@ export class GpuKit {
   dispose() {
     for (const t of this.pool.values()) deleteRenderTarget(this.gl, t);
     this.pool.clear();
+    for (const list of this.free.values()) list.forEach((t) => deleteRenderTarget(this.gl, t));
+    this.free.clear();
   }
 }

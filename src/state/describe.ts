@@ -3,6 +3,7 @@
  * "Grain amount 25", "Tone curve". The key (the set of changed fields) lets the history collapse
  * rapid consecutive edits of the same control into one step.
  */
+import { ADJUST_RANGES, TYPE_LABELS, type Mask, type ScalarAdjust } from '../recipe/masks';
 import type { Recipe } from '../recipe/schema';
 
 const SECTION: Record<string, string> = {
@@ -25,6 +26,7 @@ const SECTION: Record<string, string> = {
   crop: 'Crop',
   output: 'Output',
   appliedPreset: 'Preset',
+  masks: 'Masks',
 };
 
 /** Field paths with their own names (others are built from the path). */
@@ -105,11 +107,53 @@ function changedPaths(a: unknown, b: unknown, path: string, out: string[]) {
 
 const get = (r: unknown, path: string) => path.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), r);
 
+/** "Sky: Exposure −0.60", "New mask: Radial", "Delete mask: Sky", with a key per mask control. */
+function describeMasks(a: Mask[], b: Mask[]): { label: string; key: string } {
+  if (b.length > a.length) {
+    const m = b.find((x) => !a.some((y) => y.id === x.id));
+    return { label: `New mask${m ? `: ${m.name}` : ''}`, key: `masks:add:${m?.id}` };
+  }
+  if (b.length < a.length) {
+    const m = a.find((x) => !b.some((y) => y.id === x.id));
+    return { label: `Delete mask${m ? `: ${m.name}` : ''}`, key: `masks:del:${m?.id}` };
+  }
+  const i = b.findIndex((m, k) => JSON.stringify(m) !== JSON.stringify(a[k]));
+  if (i < 0) return { label: 'Masks', key: 'masks' };
+  const pm = a[i], nm = b[i];
+  if (pm.id !== nm.id) return { label: 'Reorder masks', key: 'masks:order' };
+  const paths: string[] = [];
+  changedPaths(pm, nm, '', paths);
+  const p = paths[0] ?? '';
+  const key = `masks:${nm.id}:${paths.sort().join('|')}`;
+  if (paths.length === 1 && p.startsWith('adjustments.')) {
+    const k = p.split('.')[1] as ScalarAdjust;
+    const v = get(nm, p);
+    const r = ADJUST_RANGES[k];
+    if (r && typeof v === 'number') return { label: `${nm.name}: ${r.label} ${v > 0 ? '+' : ''}${v.toFixed(k === 'exposure' ? 2 : 0)}`, key };
+    return { label: `${nm.name}: Color tint`, key };
+  }
+  if (paths.length === 1 && p === 'amount') return { label: `${nm.name}: Amount ${nm.amount}%`, key };
+  if (paths.length === 1 && p === 'visible') return { label: `${nm.name} ${nm.visible ? 'shown' : 'hidden'}`, key };
+  if (paths.length === 1 && p === 'invert') return { label: `Invert ${nm.name}`, key };
+  if (paths.length === 1 && p === 'name') return { label: `Rename mask: ${nm.name}`, key };
+  if (p === 'components' || paths.includes('components')) {
+    if (nm.components.length > pm.components.length) {
+      const c = nm.components[nm.components.length - 1];
+      return { label: `${nm.name}: ${c.op === 'add' ? 'Add' : c.op === 'subtract' ? 'Subtract' : 'Intersect'} ${TYPE_LABELS[c.type]}`, key };
+    }
+    if (nm.components.length < pm.components.length) return { label: `${nm.name}: Remove component`, key };
+    const c = nm.components.find((x, k) => JSON.stringify(x) !== JSON.stringify(pm.components[k]));
+    return { label: `${nm.name}: ${c ? TYPE_LABELS[c.type] : 'Components'}`, key: c?.type === 'brush' ? `${key}:${Date.now()}` : key };
+  }
+  return { label: nm.name, key };
+}
+
 export function describeChange(prev: Recipe, next: Recipe): { label: string; key: string } {
   const paths: string[] = [];
   changedPaths(prev, next, '', paths);
   const key = paths.sort().join('|');
   if (!paths.length) return { label: 'No change', key };
+  if (paths.length === 1 && paths[0] === 'masks') return describeMasks(prev.masks ?? [], next.masks ?? []);
   if (paths.length === 1) {
     const p = paths[0];
     if (p.endsWith('.enabled')) return { label: `${SECTION[p.split('.')[0]] ?? human(p)} ${get(next, p) ? 'on' : 'off'}`, key };
@@ -126,4 +170,26 @@ export function describeChange(prev: Recipe, next: Recipe): { label: string; key
     return { label: SECTION[sec] ?? human(sec), key };
   }
   return { label: 'Multiple edits', key };
+}
+
+/** Human-readable list of what a recipe changes relative to `base` (info panel, sidecars). */
+export function recipeSummary(r: Recipe, base: Recipe): string[] {
+  const out: string[] = [];
+  if (r.appliedPreset) out.push(`Preset: ${r.appliedPreset.name} (${Math.round(r.appliedPreset.amount)}%)`);
+  const paths: string[] = [];
+  changedPaths({ ...base, appliedPreset: null, masks: [] }, { ...r, appliedPreset: null, masks: [] }, '', paths);
+  const seen = new Set<string>();
+  for (const p of paths.sort()) {
+    if (p.endsWith('.enabled')) { if (!get(r, p)) out.push(`${SECTION[p.split('.')[0]] ?? human(p)} off`); continue; }
+    const v = get(r, p);
+    if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') {
+      const label = `${fieldName(p)} ${fmt(p, v)}`.trim();
+      if (!seen.has(label)) { seen.add(label); out.push(label); }
+    } else {
+      const sec = SECTION[p.split('.')[0]] ?? human(p.split('.')[0]);
+      if (!seen.has(sec)) { seen.add(sec); out.push(sec); }
+    }
+  }
+  for (const m of r.masks) out.push(`Mask: ${m.name}${m.visible ? '' : ' (hidden)'}`);
+  return out;
 }

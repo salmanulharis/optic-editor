@@ -38,6 +38,7 @@ import { ProgramCache, declaredSamplers, setUniform } from './gl/program';
 import { type RenderTargetTex, type SourceTexture, createRenderTarget, createTexture, deleteRenderTarget, texKey } from './gl/texture';
 import { COMMON_GLSL } from './glslCommon';
 import { LutTextureCache } from './lutRegistry';
+import { MaskTextureCache } from './maskRegistry';
 import { mapDims } from './mapDims';
 import { STAGES } from './stages';
 import type { ImageModel, MapSpec, OutputTarget, Stage, StageContext, StageResources, StageTextures, Uniform } from './types';
@@ -118,6 +119,7 @@ export class Pipeline {
   readonly programs: ProgramCache;
   readonly curves: CurveLutCache;
   readonly luts: LutTextureCache;
+  readonly masks: MaskTextureCache;
   readonly vao: WebGLVertexArrayObject;
   readonly kit: GpuKit;
   private pingPong = new Map<string, { rts: RenderTargetTex[]; used: number }>();
@@ -134,6 +136,7 @@ export class Pipeline {
     this.programs = new ProgramCache(gl);
     this.curves = new CurveLutCache(gl, floatLinear);
     this.luts = new LutTextureCache(gl);
+    this.masks = new MaskTextureCache(gl);
     this.vao = gl.createVertexArray()!;
     this.kit = new GpuKit(gl, this.programs, this.vao, () => this.dummyTex(), floatLinear);
     this.fmt = opts.intermediate ?? 'rgba32f';
@@ -223,6 +226,7 @@ ${body.join('\n')}
       map: (id) => maps.get(id) ?? null,
       grain: () => this.grainTex(),
       gainMap: (g) => this.gainMapTex(g),
+      aiMask: (k) => this.masks.get(k),
       dummy: this.dummyTex(),
     };
   }
@@ -340,11 +344,12 @@ ${body.join('\n')}
       let aux: StageTextures = {};
       const head = pass.stages[0];
       if (!first && head.prepare) {
-        const prepKey = slot ? `${before}#prep:${head.id}:${JSON.stringify(stageUni[0])}:${this.texturesKey(stageTex[0])}` : '';
+        const prepIn = head.prepKey ? head.prepKey(ctx) : JSON.stringify(stageUni[0]);
+        const prepKey = slot ? `${before}#prep:${head.id}:${prepIn}:${this.texturesKey(stageTex[0])}` : '';
         if (slot && slot.aux && slot.prepKey === prepKey) aux = slot.aux;
         else {
           const kit = p.cache ? this.kit.scoped(`slot:${p.cache}:${pi}:`) : this.kit;
-          aux = head.prepare(ctx, { tex: prev!.tex, width: W2, height: H2 }, kit, res);
+          aux = head.prepare(ctx, { tex: prev!.tex, width: W2, height: H2, view: viewI }, kit, res);
           if (slot) { slot.prepKey = prepKey; slot.aux = aux; }
         }
       }
@@ -394,6 +399,8 @@ ${body.join('\n')}
       for (const [name, tex] of Object.entries(aux)) bindTex(name, tex);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (last && p.scissor) gl.disable(gl.SCISSOR_TEST);
+      // Uncached renders: this pass's helper targets are consumed; later passes may reuse them.
+      if (!p.cache && this.depth === 1) this.kit.recycle();
       prev = out;
     });
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -572,6 +579,7 @@ ${body.join('\n')}
     this.programs.dispose();
     this.curves.dispose();
     this.luts.dispose();
+    this.masks.dispose();
     this.kit.dispose();
     if (this.dummy) this.gl.deleteTexture(this.dummy);
     if (this.grain) this.gl.deleteTexture(this.grain);

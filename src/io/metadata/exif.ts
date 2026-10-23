@@ -19,7 +19,8 @@ export interface ExifBlocks {
   gps: TagBlock;
 }
 
-export type MetadataMode = 'keep' | 'stripGps' | 'strip';
+/** All metadata / all but location / only author and copyright / nothing. */
+export type MetadataMode = 'keep' | 'stripGps' | 'copyright' | 'strip';
 
 export async function readExifBlocks(file: Blob): Promise<ExifBlocks | null> {
   try {
@@ -101,6 +102,11 @@ export interface ExifWriteOptions {
   /** EXIF ColorSpace: 1 = sRGB, 65535 = uncalibrated (P3/Adobe/ProPhoto with embedded ICC). */
   srgb: boolean;
   software: string;
+  /** Author / copyright (EXIF Artist 315, Copyright 33432), replacing the source's. */
+  artist?: string;
+  copyright?: string;
+  /** Print resolution (XResolution / YResolution, inches). */
+  dpi?: number;
 }
 
 /** Build a TIFF-structured EXIF blob (without the "Exif\0\0" prefix) from tag blocks. */
@@ -115,7 +121,13 @@ export function exifIfdSpec(b: ExifBlocks | null, o: ExifWriteOptions): IfdSpec 
   const ifd0: TagValue[] = [];
   const exif: TagValue[] = [];
   const gps: TagValue[] = [];
-  if (b) {
+  if (b && o.mode === 'copyright') {
+    // Only who made it: the source's artist / copyright unless new ones are given.
+    for (const t of [315, 33432]) {
+      const tv = toTag(t, b.ifd0[t], 'ifd0');
+      if (tv) ifd0.push(tv);
+    }
+  } else if (b) {
     for (const [k, v] of Object.entries(b.ifd0)) {
       const t = +k;
       if (SKIP_IFD0.has(t) || t >= 50700 || t === 305) continue;
@@ -134,6 +146,14 @@ export function exifIfdSpec(b: ExifBlocks | null, o: ExifWriteOptions): IfdSpec 
         if (tv) gps.push(tv);
       }
     }
+  }
+  const put = (tv: TagValue) => { const i = ifd0.findIndex((t) => t.tag === tv.tag); if (i >= 0) ifd0[i] = tv; else ifd0.push(tv); };
+  if (o.artist?.trim()) put({ tag: 315, type: 2, value: o.artist.trim() });
+  if (o.copyright?.trim()) put({ tag: 33432, type: 2, value: o.copyright.trim() });
+  if (o.dpi) {
+    put({ tag: 282, type: 5, value: [o.dpi] });
+    put({ tag: 283, type: 5, value: [o.dpi] });
+    put({ tag: 296, type: 3, value: [2] });
   }
   ifd0.push({ tag: 274, type: 3, value: [1] });
   ifd0.push({ tag: 305, type: 2, value: o.software });

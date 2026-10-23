@@ -17,7 +17,9 @@ import { effectiveRecipe, type Recipe } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
 import { useImage } from '../../state/imageStore';
 import { useUi } from '../../state/uiStore';
+import { useSettings } from '../../state/settingsStore';
 import { CropOverlay } from './CropOverlay';
+import { MaskOverlay } from './MaskOverlay';
 import { beforeRecipe, displayedRecipe } from './displayed';
 import { CompareOverlay, GridOverlay, GuidesOverlay, LineToolOverlay } from './Overlays';
 import { type ViewBox, toImage, viewFor } from './viewMath';
@@ -30,7 +32,7 @@ const REFINE_MS = 150;
 /** Effects whose cost justifies half-resolution frames while dragging. */
 function heavy(r: Recipe) {
   const e = r.effects, d = r.detail;
-  return d.nr.lum > 0 || d.nr.color > 0 || e.texture !== 0 || e.clarity !== 0 || e.dehaze !== 0 || e.halation.amount > 0 || e.bloom.amount > 0 || r.look.microContrast > 0;
+  return d.nr.lum > 0 || d.nr.color > 0 || e.texture !== 0 || e.clarity !== 0 || e.dehaze !== 0 || e.halation.amount > 0 || e.bloom.amount > 0 || r.look.microContrast > 0 || r.masks.length >= 4;
 }
 
 export function Viewer() {
@@ -39,11 +41,14 @@ export function Viewer() {
   const rendererRef = useRef<ViewRenderer | null>(null);
   const dirty = useRef(true);
   const [glError, setGlError] = useState<string | null>(null);
+  /** Bumped when the WebGL context is restored after a loss: everything GPU-side is rebuilt. */
+  const [glGen, setGlGen] = useState(0);
   const [box, setBox] = useState<ViewBox>({ W: 1, H: 1, dpr: 1 });
   const image = useImage((s) => s.image);
   const tool = useUi((s) => s.tool);
   const readout = useUi((s) => s.readout);
   const fps = useUi((s) => s.fps);
+  const showFps = useSettings((s) => s.showFps);
   const cropMode = useUi((s) => s.cropMode);
   const compareMode = useUi((s) => s.compareMode);
   const zoom = useUi((s) => s.zoom);
@@ -116,6 +121,12 @@ export function Viewer() {
     rendererRef.current = renderer;
     setRenderer(renderer);
     useUi.getState().set({ canvasP3: renderer.caps.p3 });
+    // GPU reset / memory pressure: keep the recipe (it lives in the store), rebuild the GPU side.
+    let lost = false;
+    const onLost = (e: Event) => { e.preventDefault(); lost = true; console.warn('[optic] WebGL context lost; waiting for it to come back'); };
+    const onRestored = () => { console.info('[optic] WebGL context restored'); setGlGen((g) => g + 1); };
+    canvas.addEventListener('webglcontextlost', onLost);
+    canvas.addEventListener('webglcontextrestored', onRestored);
 
     const ro = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
@@ -131,6 +142,14 @@ export function Viewer() {
     ro.observe(canvas);
 
     const markDirty = () => { dirty.current = true; };
+    // The space around the photo follows the theme.
+    const syncBg = () => {
+      const v = getComputedStyle(document.documentElement).getPropertyValue('--c-app').trim().split(/\s+/).map(Number);
+      if (v.length === 3 && v.every(Number.isFinite)) { renderer.bg = [v[0] / 255, v[1] / 255, v[2] / 255]; markDirty(); }
+    };
+    syncBg();
+    const themeObserver = new MutationObserver(syncBg);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     let refineTimer = 0;
     let wasDraft = false;
     const unsubs = [
@@ -139,7 +158,9 @@ export function Viewer() {
         if (s.zoom !== p.zoom || s.center !== p.center || s.showBefore !== p.showBefore || s.clipOverlay !== p.clipOverlay ||
           s.previewRecipe !== p.previewRecipe || s.visualizePointColor !== p.visualizePointColor || s.analysisTick !== p.analysisTick ||
           s.cropMode !== p.cropMode || s.compareMode !== p.compareMode || s.compareSource !== p.compareSource ||
-          s.compareSplit !== p.compareSplit || s.compareVertical !== p.compareVertical || s.compareSwap !== p.compareSwap || s.maskView !== p.maskView) markDirty();
+          s.compareSplit !== p.compareSplit || s.compareVertical !== p.compareVertical || s.compareSwap !== p.compareSwap || s.maskView !== p.maskView ||
+          s.masksOpen !== p.masksOpen || s.selectedMask !== p.selectedMask || s.maskOverlay !== p.maskOverlay || s.maskOverlayTemp !== p.maskOverlayTemp ||
+          s.maskOverlayMode !== p.maskOverlayMode || s.maskOverlayColor !== p.maskOverlayColor || s.maskOverlayOpacity !== p.maskOverlayOpacity) markDirty();
         // Drag ended: refine the half-resolution preview shortly after.
         if (p.dragging && !s.dragging && wasDraft) {
           window.clearTimeout(refineTimer);
@@ -166,7 +187,10 @@ export function Viewer() {
         const compare = img && ui.compareMode !== 'off' && !ui.cropMode && !ui.showBefore
           ? { mode: ui.compareMode as 'split' | 'side', before: beforeRecipe(img).recipe, pos: ui.compareSplit, vertical: ui.compareVertical, swap: ui.compareSwap }
           : null;
-        const frame = recipe ? { recipe, overlay: ui.clipOverlay, visualize, maskView: shown?.maskView, compare } : null;
+        const maskOverlay = ui.masksOpen && ui.selectedMask && (ui.maskOverlay || ui.maskOverlayTemp) && !ui.cropMode && !ui.showBefore
+          ? { maskId: ui.selectedMask, mode: ui.maskOverlayMode, color: ui.maskOverlayColor, opacity: ui.maskOverlayOpacity }
+          : null;
+        const frame = recipe ? { recipe, overlay: ui.clipOverlay, visualize, maskView: shown?.maskView, compare, maskOverlay } : null;
         // Never block a frame on the shader compiler: keep showing the previous frame
         // (for at most ~1 s) until the needed program variant has finished compiling.
         if (frame && !renderer.canRender(frame) && now - compileWaitStart < 1000) {
@@ -182,7 +206,8 @@ export function Viewer() {
           }
         }
         if (vv && frame && renderer.ready) {
-          const draft = ui.dragging && !compare && heavy(recipe!);
+          const q = useSettings.getState().previewQuality;
+          const draft = ui.dragging && !compare && (q === 'performance' || (q === 'balanced' && heavy(recipe!)));
           wasDraft = draft;
           renderer.render({ ...frame, view: vv.v, draft }, markDirty);
           histPending = !draft;
@@ -209,13 +234,17 @@ export function Viewer() {
       cancelAnimationFrame(raf);
       window.clearTimeout(refineTimer);
       ro.disconnect();
+      themeObserver.disconnect();
       unsubs.forEach((u) => u());
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
       setRenderer(null);
-      renderer.dispose();
+      // Objects of a lost context are gone already; deleting them would only log errors.
+      if (!lost) renderer.dispose();
       rendererRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [glGen]);
 
   // Upload the proxy when a new image arrives. Shader compiles for the common pipeline variants
   // are started first, so they run in parallel with the (multi-frame) upload.
@@ -237,7 +266,7 @@ export function Viewer() {
       );
     }
     void r.setImage(image).then(() => { dirty.current = true; });
-  }, [image]);
+  }, [image, glGen]);
 
   // A new crop or transform changes the output size: go back to Fit.
   useEffect(() => useEdit.subscribe((s, p) => {
@@ -253,8 +282,8 @@ export function Viewer() {
     const wrap = wrapRef.current!;
     const canvas = canvasRef.current!;
     const pointers = new Map<number, { x: number; y: number }>();
-    let panStart: { x: number; y: number; cx: number; cy: number } | null = null;
-    let pinchStart: { dist: number; scale: number; mx: number; my: number } | null = null;
+    let panStart: { x: number; y: number; cx: number; cy: number; scale: number } | null = null;
+    let pinchStart: { dist: number; scale: number; mx: number; my: number; ix: number; iy: number } | null = null;
     let moved = false;
     let readoutRaf = 0;
 
@@ -268,6 +297,30 @@ export function Viewer() {
       setZoomAt(vv.v.scale * Math.exp(-e.deltaY * k), e.clientX, e.clientY);
     };
 
+    // Touch gestures: double-tap toggles Fit / 100 %, press-and-hold shows Before, two- and
+    // three-finger taps undo / redo, two fingers pinch and pan together.
+    let touchStart = 0;
+    let maxTouches = 0;
+    let lastTap = { t: 0, x: 0, y: 0 };
+    let holdTimer = 0;
+    let holding = false;
+    const endHold = () => {
+      window.clearTimeout(holdTimer);
+      if (holding) { holding = false; useUi.getState().set({ showBefore: false }); }
+    };
+
+    /** Zoom to `scale` keeping image point (ix, iy) under the client point (clientX, clientY). */
+    const zoomAnchored = (scale: number, ix: number, iy: number, clientX: number, clientY: number) => {
+      const vv = computeView();
+      if (!vv) return;
+      scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+      const r = canvas.getBoundingClientRect();
+      const b = boxNow();
+      const ax = (clientX - r.left) * b.dpr - vv.areaW / 2;
+      const ay = (clientY - r.top) * b.dpr - b.H / 2;
+      useUi.getState().set({ zoom: scale, center: { x: ix - ax / scale, y: iy - ay / scale } });
+    };
+
     const onDown = (e: PointerEvent) => {
       if (!useImage.getState().image) return;
       canvas.setPointerCapture(e.pointerId);
@@ -275,13 +328,25 @@ export function Viewer() {
       moved = false;
       const vv = computeView();
       if (!vv) return;
+      if (e.pointerType === 'touch') {
+        if (pointers.size === 1) { touchStart = performance.now(); maxTouches = 0; }
+        maxTouches = Math.max(maxTouches, pointers.size);
+        endHold();
+        if (pointers.size === 1 && useUi.getState().tool === 'none') {
+          holdTimer = window.setTimeout(() => {
+            if (!moved && pointers.size === 1) { holding = true; useUi.getState().set({ showBefore: true }); }
+          }, 450);
+        }
+      }
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
-        pinchStart = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: vv.v.scale, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const p = pointerToImage(mx, my);
+        pinchStart = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: vv.v.scale, mx, my, ix: p?.x ?? vv.v.cx, iy: p?.y ?? vv.v.cy };
         panStart = null;
       } else if (useUi.getState().tool === 'none') {
-        panStart = { x: e.clientX, y: e.clientY, cx: vv.v.cx, cy: vv.v.cy };
-        if (useUi.getState().zoom === 'fit') useUi.getState().set({ zoom: vv.v.scale, center: { x: vv.v.cx, y: vv.v.cy } });
+        // Leaves Fit only once the pointer actually moves (a tap keeps the photo fitted).
+        panStart = { x: e.clientX, y: e.clientY, cx: vv.v.cx, cy: vv.v.cy, scale: vv.v.scale };
       }
     };
 
@@ -290,16 +355,21 @@ export function Viewer() {
       if (pinchStart && pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y);
-        setZoomAt((pinchStart.scale * d) / pinchStart.dist, pinchStart.mx, pinchStart.my);
-        moved = true;
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        // Pinch zooms and the midpoint pans: the image point first under the fingers stays there.
+        if (Math.abs(d - pinchStart.dist) > 6 || Math.hypot(mx - pinchStart.mx, my - pinchStart.my) > 6) moved = true;
+        if (moved) zoomAnchored((pinchStart.scale * d) / pinchStart.dist, pinchStart.ix, pinchStart.iy, mx, my);
         return;
       }
       if (panStart) {
         const dpr = canvas.width / canvas.getBoundingClientRect().width;
-        const scale = useUi.getState().zoom as number;
         const dx = (e.clientX - panStart.x) * dpr, dy = (e.clientY - panStart.y) * dpr;
-        if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
-        useUi.getState().set({ center: { x: panStart.cx - dx / scale, y: panStart.cy - dy / scale } });
+        if (!moved && Math.abs(dx) + Math.abs(dy) > (e.pointerType === 'touch' ? 8 : 2)) { moved = true; window.clearTimeout(holdTimer); }
+        if (moved) {
+          const ui = useUi.getState();
+          const scale = ui.zoom === 'fit' ? panStart.scale : ui.zoom;
+          ui.set({ zoom: scale, center: { x: panStart.cx - dx / scale, y: panStart.cy - dy / scale } });
+        }
       }
       // Pixel readout (once per frame).
       const cx = e.clientX, cy = e.clientY;
@@ -322,6 +392,26 @@ export function Viewer() {
 
     const onUp = (e: PointerEvent) => {
       pointers.delete(e.pointerId);
+      if (e.pointerType === 'touch') {
+        endHold();
+        if (pointers.size === 0) {
+          const quick = performance.now() - touchStart < 320 && !moved;
+          if (quick && maxTouches === 2) { useEdit.getState().undo(); return; }
+          if (quick && maxTouches === 3) { useEdit.getState().redo(); return; }
+          if (quick && maxTouches === 1 && useUi.getState().tool === 'none') {
+            const now = performance.now();
+            if (now - lastTap.t < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+              lastTap = { t: 0, x: 0, y: 0 };
+              const ui = useUi.getState();
+              const p = pointerToImage(e.clientX, e.clientY);
+              if (ui.zoom === 'fit' || (typeof ui.zoom === 'number' && ui.zoom < 0.999)) { if (p) zoomAnchored(1, p.x, p.y, e.clientX, e.clientY); }
+              else ui.set({ zoom: 'fit' });
+              return;
+            }
+            lastTap = { t: now, x: e.clientX, y: e.clientY };
+          }
+        }
+      }
       if (pointers.size < 2) pinchStart = null;
       const wasPan = !!panStart;
       panStart = null;
@@ -387,6 +477,7 @@ export function Viewer() {
       {image && !cropMode && <GridOverlay box={box} />}
       {image && !cropMode && <GuidesOverlay box={box} />}
       {image && cropMode && <CropOverlay box={box} />}
+      {image && !cropMode && compareMode === 'off' && <MaskOverlay box={box} />}
       {image && (tool === 'straighten' || tool === 'guide') && <LineToolOverlay box={box} />}
       {image && compareMode !== 'off' && !cropMode && <CompareOverlay box={box} />}
       {image && detailDrag && nrOrSharpen && zoom === 'fit' && (
@@ -407,7 +498,7 @@ export function Viewer() {
               </span>
             </>
           ) : (
-            <span>{fps ? `${fps} fps` : ' '}</span>
+            <span>{fps && showFps ? `${fps} fps` : ' '}</span>
           )}
         </div>
       )}

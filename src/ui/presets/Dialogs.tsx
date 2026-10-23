@@ -5,7 +5,7 @@ import { useEdit } from '../../state/editStore';
 import { usePresets } from '../../state/presetStore';
 import { useUi } from '../../state/uiStore';
 
-function Modal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+export function Modal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-label={title} className="w-full max-w-md rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
@@ -17,7 +17,7 @@ function Modal({ title, onClose, children }: { title: string; onClose(): void; c
   );
 }
 
-function GroupChecklist({ value, onChange, enabled }: { value: PresetGroup[]; onChange(v: PresetGroup[]): void; enabled?: PresetGroup[] }) {
+export function GroupChecklist({ value, onChange, enabled }: { value: PresetGroup[]; onChange(v: PresetGroup[]): void; enabled?: PresetGroup[] }) {
   return (
     <div className="grid grid-cols-1 gap-0.5">
       {PRESET_GROUPS.map((g) => {
@@ -39,7 +39,7 @@ function GroupChecklist({ value, onChange, enabled }: { value: PresetGroup[]; on
 }
 
 /** Photo-specific groups (white balance, exposure, noise reduction, lens, geometry, crop) start unticked. */
-const DEFAULT_PRESET_GROUPS = PRESET_GROUPS.filter((g) => !PHOTO_SPECIFIC_GROUPS.includes(g));
+export const DEFAULT_PRESET_GROUPS = PRESET_GROUPS.filter((g) => !PHOTO_SPECIFIC_GROUPS.includes(g));
 
 export function CreatePresetDialog() {
   const open = useUi((s) => s.createPresetOpen);
@@ -71,8 +71,8 @@ export function CreatePresetDialog() {
         Save a separate non-RAW variant (exact values, no automatic scaling)
       </label>
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-[#333]" onClick={close}>Cancel</button>
-        <button className="rounded bg-[#e0e0e0] px-3 py-1.5 text-xs font-medium text-black hover:bg-white disabled:opacity-40"
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40"
           disabled={!groups.length} onClick={save}>Save preset</button>
       </div>
     </Modal>
@@ -94,8 +94,8 @@ export function CopyPasteDialog() {
         <GroupChecklist value={groups} onChange={setGroups} enabled={enabled} />
       )}
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-[#333]" onClick={close}>Cancel</button>
-        <button className="rounded bg-[#e0e0e0] px-3 py-1.5 text-xs font-medium text-black hover:bg-white disabled:opacity-40"
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40"
           disabled={!groups.length || (mode === 'paste' && !clip)}
           onClick={() => { if (mode === 'copy') copySettings(groups); else pasteSettings(groups); close(); }}>
           {mode === 'copy' ? 'Copy' : 'Paste'}

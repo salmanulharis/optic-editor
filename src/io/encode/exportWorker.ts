@@ -7,8 +7,9 @@ import { COLOR_SPACES } from '../../color/matrices';
 import { buildIcc } from '../metadata/icc';
 import { buildExifFromBlocks, exifIfdSpec, patchExif, type ExifBlocks, type ExifWriteOptions } from '../metadata/exif';
 import { type ExportRenderInput, renderFullResolution, resampleU16 } from './exportRender';
-import { type ExportSettings, outputSize } from './exportSettings';
-import { encodeJpeg } from './jpeg';
+import { type ExportSettings, normalizeSettings, outputSize } from './exportSettings';
+import { ditherTo8, encodeJpeg } from './jpeg';
+import { applyWatermark, buildXmp, cropCenter, sharpenForOutput } from './postprocess';
 import { encodePng16 } from './png16';
 import { encodeTiff16 } from './tiff';
 
@@ -37,13 +38,24 @@ function canRenderHere(): boolean {
 }
 
 async function encode(req: EncodeRequest, progress: Progress): Promise<Uint8Array> {
-  const { settings: s } = req;
-  const { width, height } = outputSize(req.width, req.height, s.size);
+  const s = normalizeSettings(req.settings);
+  const size = outputSize(req.width, req.height, s.size, s.allowUpscale);
   let rgb = req.rgb16;
-  if (width !== req.width || height !== req.height) {
-    progress(0.72, 'Resizing');
-    rgb = resampleU16(rgb, req.width, req.height, width, height);
+  let W = req.width, H = req.height;
+  if (size.cropW !== W || size.cropH !== H) {
+    rgb = cropCenter(rgb, W, H, size.cropW, size.cropH);
+    W = size.cropW; H = size.cropH;
   }
+  const { width, height } = size;
+  if (width !== W || height !== H) {
+    progress(0.72, 'Resizing');
+    rgb = resampleU16(rgb, W, H, width, height);
+  }
+  if (s.sharpen.target !== 'none') {
+    progress(0.73, 'Output sharpening');
+    rgb = sharpenForOutput(rgb, width, height, s.sharpen.target, s.sharpen.amount);
+  }
+  if (s.watermark.enabled) await applyWatermark(rgb, width, height, s.watermark);
   const icc = buildIcc(s.colorSpace);
   const opts: ExifWriteOptions = {
     mode: s.metadata,
@@ -51,25 +63,61 @@ async function encode(req: EncodeRequest, progress: Progress): Promise<Uint8Arra
     height,
     srgb: s.colorSpace === 'srgb',
     software: 'Optic',
+    artist: s.author.artist,
+    copyright: s.author.copyright,
+    dpi: s.dpi,
   };
+  // The source JPEG's EXIF is copied verbatim only when nothing has to be added to it.
+  const verbatim = req.sourceJpegExif && (s.metadata === 'keep' || s.metadata === 'stripGps') && !s.author.artist.trim() && !s.author.copyright.trim();
   const exifBlob = () =>
     s.metadata === 'strip'
       ? null
-      : req.sourceJpegExif
-        ? patchExif(req.sourceJpegExif, opts)
+      : verbatim
+        ? patchExif(req.sourceJpegExif!, opts)
         : buildExifFromBlocks(req.exif, opts);
+  const xmp = s.metadata === 'strip' ? null : buildXmp(s.author.artist.trim(), s.author.copyright.trim());
   const encodeProgress = (f: number) => progress(0.75 + 0.25 * f, 'Encoding');
   progress(0.75, 'Encoding');
-  if (s.format === 'jpeg') return encodeJpeg(rgb, width, height, { quality: s.quality, icc, exif: exifBlob() });
-  if (s.format === 'png') {
-    return encodePng16(rgb, width, height, { icc, profileName: COLOR_SPACES[s.colorSpace].label, exif: exifBlob(), onProgress: encodeProgress });
+  switch (s.format) {
+    case 'jpeg':
+      return encodeJpeg(rgb, width, height, { quality: s.quality, icc, exif: exifBlob(), xmp });
+    case 'png':
+      return encodePng16(rgb, width, height, { icc, profileName: COLOR_SPACES[s.colorSpace].label, exif: exifBlob(), xmp, dpi: s.dpi, onProgress: encodeProgress });
+    case 'avif':
+      return encodeAvif10(rgb, width, height, s.quality);
+    case 'jxl':
+      return encodeJxl8(rgb, width, height, s.quality);
+    default:
+      return encodeTiff16(rgb, width, height, {
+        icc,
+        metadata: exifIfdSpec(req.exif, opts),
+        compression: s.tiffCompression,
+        dpi: s.dpi,
+        xmp,
+        onProgress: encodeProgress,
+      });
   }
-  return encodeTiff16(rgb, width, height, {
-    icc,
-    metadata: exifIfdSpec(req.exif, opts),
-    compression: s.tiffCompression,
-    onProgress: encodeProgress,
-  });
+}
+
+/** AVIF, 10 bits per channel from the 16-bit render (sRGB, BT.709 signalling). */
+async function encodeAvif10(rgb: Uint16Array, w: number, h: number, quality: number): Promise<Uint8Array> {
+  const { default: encode } = await import('@jsquash/avif/encode');
+  const data = new Uint16Array(w * h * 4);
+  for (let i = 0, j = 0; i < rgb.length; i += 3, j += 4) {
+    data[j] = (rgb[i] * 1023 + 32767) / 65535;
+    data[j + 1] = (rgb[i + 1] * 1023 + 32767) / 65535;
+    data[j + 2] = (rgb[i + 2] * 1023 + 32767) / 65535;
+    data[j + 3] = 1023;
+  }
+  const out = await encode({ data, width: w, height: h }, { bitDepth: 10, quality, speed: 6, subsample: quality >= 90 ? 3 : 1 });
+  return new Uint8Array(out);
+}
+
+/** JPEG XL (8-bit sRGB, dithered from the 16-bit render). */
+async function encodeJxl8(rgb: Uint16Array, w: number, h: number, quality: number): Promise<Uint8Array> {
+  const { default: encode } = await import('@jsquash/jxl/encode');
+  const out = await encode(ditherTo8(rgb, w, h), { quality, effort: 7 });
+  return new Uint8Array(out);
 }
 
 const api = {

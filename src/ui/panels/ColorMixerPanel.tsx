@@ -39,7 +39,7 @@ function BwMixerPanel() {
       onReset={() => useEdit.getState().apply((r) => ({ ...r, bwMixer: { ...defaultRecipe().bwMixer, enabled: r.bwMixer.enabled } }))}
     >
       <div className="mb-2 flex justify-end">
-        <button className="rounded border border-line bg-[#2d2d2d] px-2 py-1 text-xs hover:bg-[#333]" onClick={autoBwMix}>Auto mix</button>
+        <button className="rounded border border-line bg-raise px-2 py-1 text-xs hover:bg-hover" onClick={autoBwMix}>Auto mix</button>
       </div>
       {HSL_BANDS.map((b, i) => (
         <Slider key={b} label={NAMES[b]} value={m[b]} min={-100} max={100} step={1} defaultValue={0}
@@ -75,7 +75,7 @@ function HslPanel() {
         {TABS.map(([p, label]) => (
           <button
             key={p}
-            className={`flex-1 py-1 ${tab === p ? 'bg-[#3a3a3a] text-white' : 'text-ink-dim hover:text-ink'}`}
+            className={`flex-1 py-1 ${tab === p ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
             onClick={() => setTab(p)}
           >
             {label}

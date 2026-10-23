@@ -1,0 +1,11 @@
+# Netlify: build and serve dist/ (headers in public/_headers, copied into dist/).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Single-page app: unknown paths serve the app (the service worker handles /share-target after
+# the first visit; before that a share opens the app).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

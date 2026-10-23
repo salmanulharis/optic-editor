@@ -74,6 +74,8 @@ export interface OutputTarget {
   visualizePointColor?: boolean;
   /** Show a detail mask in black and white (preview only, Alt + drag). */
   maskView?: 'sharpen';
+  /** Show a local-adjustment mask as a colour overlay or in black and white (preview only). */
+  maskOverlay?: { maskId: string; mode: 'color' | 'bw'; color: [number, number, number]; opacity: number } | null;
 }
 
 export interface StageContext {
@@ -107,6 +109,8 @@ export interface StageResources {
   grain(): WebGLTexture;
   /** Gain-map texture for a lens profile's gain map. */
   gainMap(g: NonNullable<LensProfile['gainMap']>): WebGLTexture;
+  /** AI mask bitmap from the mask registry (null when not computed yet). */
+  aiMask(key: string): WebGLTexture | null;
   /**
    * A 1×1 texture for samplers a stage declares but does not need this frame. Sampler uniforms
    * keep their last unit per program, which may by now hold the render target (feedback loop =
@@ -121,6 +125,8 @@ export interface PassInput {
   /** Size of the (padded) intermediate frame. */
   width: number;
   height: number;
+  /** Frame pixel (gl_FragCoord of a helper pass) → output pixel. */
+  view: Mat3;
 }
 
 /**
@@ -168,6 +174,12 @@ export interface Stage {
   textures?(ctx: StageContext, res: StageResources): StageTextures;
   /** Spatial stages: helper passes over the previous pass's output; returns extra samplers. */
   prepare?(ctx: StageContext, input: PassInput, kit: GpuKit, res: StageResources): StageTextures;
+  /**
+   * Spatial stages: what `prepare` depends on besides the previous pass and the stage's textures.
+   * Defaults to all of the stage's uniforms; a stage whose final-pass uniforms change often
+   * (slider drags) but whose helper passes don't, narrows it so the helpers stay cached.
+   */
+  prepKey?(ctx: StageContext): string;
   /** Spatial stages: how far the stage reads around a pixel, in target pixels. */
   reach?(ctx: StageContext): number;
   /** Image-wide maps the stage samples. */

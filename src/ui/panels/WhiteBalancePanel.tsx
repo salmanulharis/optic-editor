@@ -48,7 +48,8 @@ export function WhiteBalancePanel() {
     >
       <div className="mb-2 flex items-center gap-2">
         <select
-          className="flex-1 rounded border border-line bg-[#2d2d2d] px-1.5 py-1 text-xs text-ink outline-none"
+          aria-label="White balance mode"
+          className="flex-1 rounded border border-line bg-raise px-1.5 py-1 text-xs text-ink outline-none"
           value={wb.mode}
           onChange={(e) => setMode(e.target.value as WbMode)}
         >

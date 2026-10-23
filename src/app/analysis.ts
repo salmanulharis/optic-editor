@@ -6,8 +6,7 @@
  *  - the lateral-CA estimate, the first time "Auto" chromatic aberration is switched on.
  * They run in idle time, one at a time, so the photo shows up first and the UI stays responsive.
  */
-import { estimateNoise } from '../color/noiseEstimate';
-import { estimateCA } from '../geometry/caEstimate';
+import { analysisWorker } from './analysisClient';
 import { lensfunProfile } from '../io/lens/lensfun';
 import { derive } from '../pipeline/derive';
 import { useEdit } from '../state/editStore';
@@ -30,9 +29,12 @@ export function startAnalysis(img: LoadedImage) {
     const t0 = performance.now();
     // White-balanced green-weighted luminance: raw channels are scaled by their As Shot gains.
     const gains = img.isRaw ? derive(img.model, defaultRecipeFor(img)).wbMul : [1, 1, 1];
-    img.model.analysis.noise = estimateNoise(img.full, [gains[0], gains[1], gains[2]]);
-    console.info(`[optic] noise model S=${img.model.analysis.noise.S.toExponential(2)} O=${img.model.analysis.noise.O.toExponential(2)} (${Math.round(performance.now() - t0)} ms)`);
-    bump();
+    void analysisWorker().noise(img.full, [gains[0], gains[1], gains[2]]).then((n) => {
+      if (!isCurrent(img)) return;
+      img.model.analysis.noise = n;
+      console.info(`[optic] noise model S=${n.S.toExponential(2)} O=${n.O.toExponential(2)} (${Math.round(performance.now() - t0)} ms, worker)`);
+      bump();
+    }).catch((e) => console.warn('[optic] noise analysis failed', e));
   });
   if (img.isRaw && !img.model.lens && img.info.lens) {
     lensfunProfile(img.info, img.width, img.height)
@@ -53,9 +55,12 @@ export function startAnalysis(img: LoadedImage) {
     idle(() => {
       if (!isCurrent(img)) return;
       const t0 = performance.now();
-      img.model.analysis.ca = estimateCA(img.full);
-      console.info(`[optic] lateral CA estimate ${JSON.stringify(img.model.analysis.ca)} (${Math.round(performance.now() - t0)} ms)`);
-      bump();
+      void analysisWorker().ca(img.full).then((ca) => {
+        if (!isCurrent(img)) return;
+        img.model.analysis.ca = ca;
+        console.info(`[optic] lateral CA estimate ${JSON.stringify(ca)} (${Math.round(performance.now() - t0)} ms, worker)`);
+        bump();
+      }).catch((e) => console.warn('[optic] CA analysis failed', e));
     });
   };
   unsubscribeCa = useEdit.subscribe((s, p) => { if (s.recipe.lens.ca.auto !== p.recipe.lens.ca.auto) check(); });

@@ -12,6 +12,8 @@ import { toXYZ_D65 } from '../color/matrices';
 import { renderFullResolution } from '../io/encode/exportRender';
 import type { FloatImage } from '../io/decode/types';
 import type { ImageModel, OutputTarget } from '../pipeline/types';
+import { maskRegistry } from '../pipeline/maskRegistry';
+import { newComponent, newMask } from '../recipe/masks';
 import { type Recipe, defaultRecipe } from '../recipe/schema';
 import type { LoadedImage } from '../state/imageStore';
 import { ViewRenderer } from '../ui/canvas/viewRenderer';
@@ -47,7 +49,53 @@ export function seamRecipe(): Recipe {
   r.effects.grain = { amount: 40, size: 30, roughness: 50, color: 20, type: 'custom' };
   r.effects.vignette = { ...r.effects.vignette, amount: -40 };
   r.look.microContrast = 40;
+  r.masks = seamMasks();
   return r;
+}
+
+const SEAM_AI_KEY = 'synthetic|ai:subject';
+
+/** Local adjustments with every spatial component and adjustment (seam test). */
+function seamMasks() {
+  const pts: number[] = [];
+  for (let i = 0; i <= 60; i++) pts.push(0.1 + i * 0.013, 0.5 + 0.2 * Math.sin(i / 6), 0.5 + 0.5 * Math.abs(Math.sin(i / 9)));
+  const subj = newComponent('aiSubject');
+  subj.cacheKey = SEAM_AI_KEY;
+  return [
+    newMask('radial', [newComponent('radial', 'add', { cx: 0.4, cy: 0.45, rx: 0.3, ry: 0.25, angle: 20, feather: 60 })],
+      { exposure: 0.8, texture: 100, clarity: 100, dehaze: 100, sharpness: 100, noise: 100, saturation: 40 }),
+    newMask('brush', [newComponent('brush', 'add', { strokes: [{ erase: false, size: 0.04, feather: 40, flow: 80, density: 100, autoMask: true, points: pts }] })],
+      { exposure: -1, temp: 40, texture: -100, sharpness: -100 }),
+    newMask('ranges', [newComponent('lumRange', 'add', { lo: 40, hi: 80, smoothness: 40 }), newComponent('linear', 'intersect', { x1: 0, y1: 0, x2: 1, y2: 1 })],
+      { contrast: 60, highlights: -50, shadows: 50, hue: 40 }),
+    newMask('ai', [subj], { exposure: 0.5, clarity: -60, tintColor: { hue: 200, amount: 60 } }),
+  ];
+}
+
+/** A soft synthetic "subject" bitmap for the AI mask in the seam test. */
+function registerSeamAiMask() {
+  const w = 1024, h = 1024, data = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const d = Math.hypot((x - 600) / 300, (y - 450) / 380);
+    data[(y * w + x) * 4] = Math.round(255 * Math.min(1, Math.max(0, (1.1 - d) * 4)));
+  }
+  maskRegistry.set({ key: SEAM_AI_KEY, width: w, height: h, data });
+}
+
+/** Sixteen typical masks for the benchmark. */
+function sixteenMasks() {
+  const out = [];
+  for (let i = 0; i < 16; i++) {
+    const kind = i % 4;
+    const pts: number[] = [];
+    for (let k = 0; k <= 20; k++) pts.push(0.1 + k * 0.03, 0.2 + i * 0.04 + 0.03 * Math.sin(k / 3), 1);
+    const comp = kind === 0 ? newComponent('radial', 'add', { cx: 0.1 + i * 0.05, cy: 0.5, rx: 0.15, ry: 0.2 })
+      : kind === 1 ? newComponent('linear', 'add', { x1: 0, y1: i / 16, x2: 0, y2: i / 16 + 0.3 })
+      : kind === 2 ? newComponent('lumRange', 'add', { lo: 20 + i * 3, hi: 70 + i, smoothness: 30 })
+      : newComponent('brush', 'add', { strokes: [{ erase: false, size: 0.02, feather: 50, flow: 100, density: 100, autoMask: false, points: pts }] });
+    out.push(newMask(`m${i}`, [comp], { exposure: 0.2, contrast: 10, saturation: 10, ...(i % 5 === 0 ? { clarity: 20 } : {}), ...(i % 7 === 0 ? { texture: 15 } : {}) }));
+  }
+  return out;
 }
 
 /** Every Phase 3 effect on at typical strengths (benchmark). */
@@ -64,6 +112,7 @@ const TARGET: OutputTarget = { mode: 'encoded', space: 'srgb', dither: false, cl
 
 export async function seamTest(size = 4096, tile = 512) {
   log(`Seam test: ${size}² synthetic, tiles of ${tile} vs untiled…`);
+  registerSeamAiMask();
   const full = syntheticImage(size, size);
   const input = { full, proxy: proxyOf(full, 2048), luts: [], image: model(size, size), recipe: seamRecipe(), target: TARGET };
   // The untiled reference first: it needs the most GPU memory.
@@ -144,6 +193,14 @@ export async function bench(W = 8064, H = 6048) {
   fps.allEffectsDragGrain = await measureFps(r, drag(all, (rc, v) => ({ ...rc, effects: { ...rc.effects, grain: { ...rc.effects.grain, amount: 40 + 20 * v } } })), 90);
   fps.allEffectsDragExposure = await measureFps(r, drag(all, (rc, v) => ({ ...rc, light: { ...rc.light, exposure: v * 0.5 } })), 90);
   fps.allEffectsDragExposureDraft = await measureFps(r, drag(all, (rc, v) => ({ ...rc, light: { ...rc.light, exposure: v * 0.5 } })), 90, true);
+  // 16 masks (gradients, ranges, brushes): drag one mask's exposure (cached mask passes), and
+  // drag the global exposure (everything upstream of the masks re-runs).
+  const masked = { ...base, masks: sixteenMasks() };
+  fps.sixteenMasksDragMask = await measureFps(r, drag(masked, (rc, v) => ({ ...rc, masks: rc.masks.map((mk, k) => (k === 3 ? { ...mk, adjustments: { ...mk.adjustments, exposure: v } } : mk)) })), 90);
+  fps.sixteenMasksDragExposure = await measureFps(r, drag(masked, (rc, v) => ({ ...rc, light: { ...rc.light, exposure: v * 0.5 } })), 90);
+  fps.sixteenMasksDragExposureDraft = await measureFps(r, drag(masked, (rc, v) => ({ ...rc, light: { ...rc.light, exposure: v * 0.5 } })), 90, true);
+  const noMaskClarity = { ...masked, masks: masked.masks.map((mk) => ({ ...mk, adjustments: { ...mk.adjustments, clarity: 0 } })) };
+  fps.sixteenMasksNoClarityDragExposure = await measureFps(r, drag(noMaskClarity, (rc, v) => ({ ...rc, light: { ...rc.light, exposure: v * 0.5 } })), 90);
   for (const [k, v] of Object.entries(fps)) log(`  preview ${k}: ${v.toFixed(1)} fps (canvas ${canvas.width}×${canvas.height})`);
   r.dispose();
   const te = performance.now();

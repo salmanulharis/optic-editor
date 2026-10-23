@@ -8,9 +8,12 @@
  * v3 (Phase 3) adds: detail (sharpening, noise reduction), effects (texture, clarity, dehaze, grain,
  * halation, bloom, vignette), lens corrections, geometry and crop. Older recipes are migrated in
  * serialize.ts; every v3 addition defaults to the identity, so a migrated recipe renders unchanged.
+ * v4 (Phase 4) adds local adjustments: `masks` (see masks.ts), empty by default. Photo metadata
+ * (rating, flag, colour label, keywords) is stored with the photo in the catalog, not here.
  */
+import type { Mask } from './masks';
 
-export const RECIPE_VERSION = 3;
+export const RECIPE_VERSION = 4;
 
 export type Point = { x: number; y: number };
 
@@ -77,6 +80,7 @@ export const PRESET_GROUPS = [
   'lens',
   'geometry',
   'crop',
+  'masks',
 ] as const;
 export type PresetGroup = (typeof PRESET_GROUPS)[number];
 
@@ -102,10 +106,11 @@ export const GROUP_LABELS: Record<PresetGroup, string> = {
   lens: 'Lens corrections',
   geometry: 'Geometry (upright, transform)',
   crop: 'Crop & straighten',
+  masks: 'Masks (local adjustments)',
 };
 
 /** Photo-specific groups: never part of a new preset or a paste unless explicitly ticked. */
-export const PHOTO_SPECIFIC_GROUPS: readonly PresetGroup[] = ['whiteBalance', 'exposure', 'noiseReduction', 'lens', 'geometry', 'crop'];
+export const PHOTO_SPECIFIC_GROUPS: readonly PresetGroup[] = ['whiteBalance', 'exposure', 'noiseReduction', 'lens', 'geometry', 'crop', 'masks'];
 
 /**
  * Record of the applied preset. `base` holds the user's values for the preset's groups before it
@@ -232,6 +237,8 @@ export interface Recipe {
   crop: { x: number; y: number; w: number; h: number; angle: number; aspect: string; flipH: boolean; flipV: boolean; rotate90: 0 | 1 | 2 | 3 };
   output: { colorSpace: 'srgb' | 'display-p3' };
   appliedPreset: AppliedPreset | null;
+  /** Local adjustments, applied in order at stage 78. */
+  masks: Mask[];
 }
 
 export type SectionKey =
@@ -289,6 +296,7 @@ export function defaultRecipe(): Recipe {
     crop: { ...IDENTITY_CROP },
     output: { colorSpace: 'display-p3' },
     appliedPreset: null,
+    masks: [],
   };
 }
 

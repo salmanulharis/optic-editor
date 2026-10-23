@@ -37,7 +37,7 @@ export function CurvePanel() {
           <button
             key={id}
             onClick={() => useUi.getState().set({ curveChannel: id })}
-            className={`rounded px-2 py-0.5 text-xs ${ch === id ? 'bg-[#3a3a3a] text-white' : 'text-ink-dim hover:text-ink'}`}
+            className={`rounded px-2 py-0.5 text-xs ${ch === id ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
           >
             <span className="mr-1 inline-block h-2 w-2 rounded-full" style={{ background: c }} />
             {label}

@@ -72,16 +72,16 @@ export function PresetBrowser() {
       <div className="flex items-center gap-1 border-b border-line px-2 py-1.5">
         <input className="input min-w-0 flex-1" placeholder="Search presets" value={q} onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.stopPropagation()} aria-label="Search presets" />
-        <button title={view === 'grid' ? 'Compact list' : 'Thumbnail grid'} className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-[#333]"
+        <button title={view === 'grid' ? 'Compact list' : 'Thumbnail grid'} className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-hover"
           onClick={() => useUi.getState().set({ presetView: view === 'grid' ? 'list' : 'grid' })}>
           {view === 'grid' ? '☰' : '▦'}
         </button>
       </div>
       <div className="flex items-center gap-1 border-b border-line px-2 py-1 text-[11px]">
-        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-[#333] hover:text-ink disabled:opacity-40" disabled={!hasImage}
+        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!hasImage}
           onClick={() => useUi.getState().set({ createPresetOpen: true })}>+ Create</button>
-        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-[#333] hover:text-ink" onClick={() => importRef.current?.click()}>Import</button>
-        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-[#333] hover:text-ink disabled:opacity-40" disabled={!user.length}
+        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink" onClick={() => importRef.current?.click()}>Import</button>
+        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!user.length}
           onClick={() => download('my-presets.opticpack', buildPack(user) as BlobPart, 'application/zip')}>Export pack</button>
         <input ref={importRef} type="file" multiple accept=".json,.opticpack,.zip,.cube,.png" className="hidden"
           onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void doImport(f); e.target.value = ''; }} />
@@ -119,7 +119,7 @@ export function PresetBrowser() {
           {!(closed.luts ?? true) && (
             <div className="pb-1">
               {luts.map((l) => (
-                <button key={l.id} className="block w-full truncate px-3 py-1 text-left text-xs text-ink-dim hover:bg-[#2e2e2e] hover:text-ink"
+                <button key={l.id} className="block w-full truncate px-3 py-1 text-left text-xs text-ink-dim hover:bg-hover hover:text-ink"
                   onClick={() => useEdit.getState().apply((r) => ({ ...r, lut: { ...r.lut, enabled: true, id: l.id } }))}>
                   {l.name} <span className="text-ink-faint">{l.size}³</span>
                 </button>
@@ -157,16 +157,16 @@ function PresetTile({ preset, view, fav, onMenu }: { preset: Preset; view: 'grid
   };
   if (view === 'list') {
     return (
-      <div {...common} className={`group flex cursor-pointer items-center gap-2 px-3 py-1 text-xs outline-none hover:bg-[#2e2e2e] focus:bg-[#2e2e2e] ${applied ? 'text-white' : 'text-ink-dim'}`}>
+      <div {...common} className={`group flex cursor-pointer items-center gap-2 px-3 py-1 text-xs outline-none hover:bg-hover focus:bg-hover ${applied ? 'text-strong' : 'text-ink-dim'}`}>
         <span className="truncate">{preset.name}</span>
         <span className="ml-auto">{star}</span>
       </div>
     );
   }
   return (
-    <div {...common} className={`group cursor-pointer rounded outline-none focus:ring-1 focus:ring-[#888] ${applied ? 'ring-1 ring-[#ccc]' : ''}`}>
-      <div className="relative aspect-[4/3] overflow-hidden rounded bg-[#1f1f1f]">
-        {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <div className="h-full w-full animate-pulse bg-[#262626]" />}
+    <div {...common} className={`group cursor-pointer rounded outline-none focus:ring-1 focus:ring-edge ${applied ? 'ring-1 ring-ink' : ''}`}>
+      <div className="relative aspect-[4/3] overflow-hidden rounded bg-sunk">
+        {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <div className="h-full w-full animate-pulse bg-sunk" />}
         <span className="absolute right-1 top-0.5">{star}</span>
       </div>
       <div className="truncate px-0.5 pt-0.5 text-[11px] text-ink-dim group-hover:text-ink">{preset.name}</div>
@@ -178,11 +178,11 @@ function ContextMenu({ menu, close }: { menu: Menu; close(): void }) {
   const p = menu.preset;
   const store = usePresets.getState();
   const item = (label: string, fn: () => void, danger = false) => (
-    <button className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-[#3a3a3a] ${danger ? 'text-[#f0a0a0]' : 'text-ink'}`}
+    <button className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-active ${danger ? 'text-[#f0a0a0]' : 'text-ink'}`}
       onClick={(e) => { e.stopPropagation(); fn(); close(); }}>{label}</button>
   );
   return (
-    <div className="fixed z-50 min-w-[180px] rounded border border-line bg-[#2a2a2a] py-1 shadow-xl" style={{ left: menu.x, top: menu.y }}
+    <div className="fixed z-50 min-w-[180px] rounded border border-line bg-raise py-1 shadow-xl" style={{ left: menu.x, top: menu.y }}
       onClick={(e) => e.stopPropagation()}>
       {item('Apply', () => applyPresetToEdit(p))}
       {item('Apply at 50%', () => applyPresetToEdit(p, 50))}
@@ -207,11 +207,11 @@ function AppliedHeader() {
   return (
     <div className="border-b border-line px-3 py-2">
       <div className="flex items-center gap-1">
-        <span className="min-w-0 truncate rounded bg-[#333] px-1.5 py-0.5 text-xs text-white" title={applied.name}>
+        <span className="min-w-0 truncate rounded bg-hover px-1.5 py-0.5 text-xs text-strong" title={applied.name}>
           {applied.name}{edited ? ' (edited)' : ''}
         </span>
-        <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-[#333] hover:text-ink" onClick={resetToPreset} title="Discard manual changes to the preset's settings">Reset</button>
-        <button className="rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-[#333] hover:text-ink" onClick={removeAppliedPreset} title="Restore the settings from before the preset">Remove</button>
+        <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-hover hover:text-ink" onClick={resetToPreset} title="Discard manual changes to the preset's settings">Reset</button>
+        <button className="rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-hover hover:text-ink" onClick={removeAppliedPreset} title="Restore the settings from before the preset">Remove</button>
       </div>
       <Slider label="Amount" value={applied.amount} min={0} max={200} step={1} defaultValue={100}
         format={(v) => `${Math.round(v)}%`} onChange={setAmountLive} onCommit={commitAmount} />

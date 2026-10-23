@@ -9,6 +9,8 @@ export interface TiffOptions {
   icc: Uint8Array;
   metadata: IfdSpec | null;
   compression: 'deflate' | 'none';
+  dpi?: number;
+  xmp?: string | null;
   onProgress?: (f: number) => void;
 }
 
@@ -48,12 +50,13 @@ export async function encodeTiff16(rgb: Uint16Array, width: number, height: numb
     { tag: 277, type: 3, value: [3] },
     { tag: 278, type: 4, value: [ROWS_PER_STRIP] },
     { tag: 279, type: 4, value: strips.map((s) => s.length) },
-    { tag: 282, type: 5, value: [300] },
-    { tag: 283, type: 5, value: [300] },
+    { tag: 282, type: 5, value: [o.dpi ?? 300] },
+    { tag: 283, type: 5, value: [o.dpi ?? 300] },
     { tag: 284, type: 3, value: [1] },
     { tag: 296, type: 3, value: [2] },
     ...(o.compression === 'deflate' ? [{ tag: 317, type: 3 as const, value: [2] }] : []),
     { tag: 34675, type: 7, value: o.icc },
+    ...(o.xmp ? [{ tag: 700, type: 7 as const, value: new TextEncoder().encode(o.xmp) }] : []),
   ];
   const spec = (offsets: number[]): IfdSpec => {
     const meta = o.metadata;
