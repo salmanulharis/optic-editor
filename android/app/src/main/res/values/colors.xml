@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="optic_background">#1C1C1C</color>
+    <color name="colorPrimary">#1C1C1C</color>
+    <color name="colorPrimaryDark">#1C1C1C</color>
+    <color name="colorAccent">#E0E0E0</color>
+</resources>

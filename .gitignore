@@ -7,3 +7,7 @@ sample-files/IMG_7040.jpeg
 public/models/
 test-results/
 playwright-report/
+# Mobile apps: icon sources (rendered by `npm run native:assets`) and build outputs
+assets/
+build-ios/
+release/

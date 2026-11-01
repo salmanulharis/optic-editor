@@ -10,6 +10,7 @@
  *  - Screen readers: role="slider" with the value text announced.
  */
 import { useCallback, useEffect, useRef } from 'react';
+import { haptic } from '../../app/native';
 import { NumberInput } from './NumberInput';
 
 export interface SliderProps {
@@ -62,7 +63,7 @@ export function Slider(props: SliderProps) {
     onCommit();
     tick();
   };
-  const tick = () => { try { navigator.vibrate?.(8); } catch { /* no vibration */ } };
+  const tick = () => haptic('light');
   /** Haptic tick when a drag crosses (or lands on) the default value. */
   const change = (v: number) => {
     const prev = latest.current.value;

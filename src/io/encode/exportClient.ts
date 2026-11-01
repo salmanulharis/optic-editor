@@ -8,6 +8,7 @@ import { extractJpegExif } from '../metadata/exif';
 import { lutRegistry } from '../../pipeline/lutRegistry';
 import { renderFullResolution } from './exportRender';
 import { isIOS } from '../../ui/mobile/layout';
+import { isNative, saveFileNative } from '../../app/native';
 import { type ExportSettings, MIME, exportFileName } from './exportSettings';
 import type { ExportWorkerApi } from './exportWorker';
 
@@ -99,6 +100,11 @@ export async function saveBytes(bytes: Uint8Array, fileName: string, mime: strin
 }
 
 export function downloadBlob(blob: Blob, fileName: string) {
+  // Android / iOS app: WebViews cannot download; save to the gallery / share sheet instead.
+  if (isNative()) {
+    void saveFileNative(blob, fileName);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

@@ -1,0 +1,150 @@
+# Build the iOS app (IPA) on a macOS runner.
+#
+# Runs on pushes to the `mobile-apps` branch, on version tags (1.2.3 / v1.2.3) and by hand
+# (Actions → iOS IPA → Run workflow). The IPA is attached to the run as an artifact.
+#
+# Without signing secrets the IPA is unsigned: install it with AltStore, Sideloadly or similar
+# (they sign it with your Apple ID). For a signed IPA (ad-hoc, development, App Store / TestFlight)
+# add these repository secrets (Settings → Secrets and variables → Actions):
+#   IOS_CERTIFICATE_P12         base64 of the signing certificate exported as .p12
+#                               (`base64 -i cert.p12 | pbcopy`)
+#   IOS_CERTIFICATE_PASSWORD    password of that .p12
+#   IOS_PROVISIONING_PROFILE    base64 of the .mobileprovision for bundle id in.techbysh.optic
+#   IOS_TEAM_ID                 Apple Developer Team ID (10 characters)
+#   IOS_EXPORT_METHOD           optional: ad-hoc (default), development, app-store-connect, enterprise
+name: iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mobile-apps
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      HAS_SIGNING: ${{ secrets.IOS_CERTIFICATE_P12 != '' && secrets.IOS_PROVISIONING_PROFILE != '' && secrets.IOS_TEAM_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Copy web app into the iOS project
+        run: npx cap sync ios
+
+      - name: Version
+        id: version
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install signing certificate and profile
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          echo "$PROFILE" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          # Install the profile under its UUID and remember its name for the build settings.
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/profile.plist")
+          NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$RUNNER_TEMP/profile.plist")
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID".mobileprovision
+          echo "PROFILE_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Build signed IPA
+        if: env.HAS_SIGNING == 'true'
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          EXPORT_METHOD: ${{ secrets.IOS_EXPORT_METHOD || 'ad-hoc' }}
+        run: |
+          set -o pipefail
+          # Manual signing for the app target only (Swift packages are built unsigned).
+          sed -i '' \
+            -e "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual; DEVELOPMENT_TEAM = $TEAM_ID; PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/" \
+            -e 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "Apple Distribution";/' \
+            ios/App/App.xcodeproj/project.pbxproj
+          if [ "$EXPORT_METHOD" = "development" ]; then
+            sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Distribution";/CODE_SIGN_IDENTITY = "Apple Development";/' ios/App/App.xcodeproj/project.pbxproj
+          fi
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Optic.xcarchive" \
+            MARKETING_VERSION=${{ steps.version.outputs.version }} CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }} \
+            archive | tail -n 40
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>$EXPORT_METHOD</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict><key>in.techbysh.optic</key><string>$PROFILE_NAME</string></dict>
+            <key>compileBitcode</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Optic.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export"
+          mkdir -p build-ios
+          mv "$RUNNER_TEMP"/export/*.ipa "build-ios/Optic-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}.ipa"
+
+      - name: Build unsigned IPA
+        if: env.HAS_SIGNING != 'true'
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Optic.xcarchive" \
+            MARKETING_VERSION=${{ steps.version.outputs.version }} CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive | tail -n 40
+          mkdir -p "$RUNNER_TEMP/ipa/Payload" build-ios
+          cp -R "$RUNNER_TEMP/Optic.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/build-ios/Optic-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}-unsigned.ipa" Payload)
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Optic-iOS-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}
+          path: build-ios/*.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Clean up keychain
+        if: always() && env.HAS_SIGNING == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true

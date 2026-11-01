@@ -12,6 +12,7 @@ import { Viewer } from '../ui/canvas/Viewer';
 import { BatchExportDialog, ExportDialog, ExportQueuePanel } from '../ui/export/ExportDialog';
 import { restoreExportQueue } from '../library/exportQueue';
 import { initPwa } from './pwa';
+import { initNative } from './native';
 import { SettingsDialog } from '../ui/SettingsDialog';
 import { Onboarding, ShortcutsOverlay } from '../ui/Overlays';
 import { HistogramView } from '../ui/histogram/Histogram';
@@ -100,6 +101,7 @@ export function App() {
     startLibrarySync();
     void restoreExportQueue();
     void initPwa();
+    void initNative();
     // Background work (preset thumbnails) pauses while any pointer is held down.
     const down = () => useUi.getState().set({ dragging: true });
     const up = () => useUi.getState().set({ dragging: false });

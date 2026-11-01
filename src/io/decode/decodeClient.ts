@@ -7,8 +7,17 @@ import type { DecodeResult, ProgressFn, SourceFormat } from './types';
 
 const RAW_EXT = new Set(['dng', 'cr2', 'cr3', 'crw', 'nef', 'nrw', 'arw', 'srf', 'sr2', 'raf', 'rw2', 'orf', 'pef', 'srw', 'x3f', '3fr', 'iiq', 'erf', 'mos', 'mrw', 'kdc', 'dcr', 'raw', 'rwl', 'gpr']);
 
-export const ACCEPT =
+const ACCEPT_EXTS =
   '.dng,.cr2,.cr3,.nef,.nrw,.arw,.raf,.rw2,.orf,.pef,.srw,.3fr,.iiq,.rwl,.heic,.heif,.hif,.jpg,.jpeg,.png,.tif,.tiff,.webp,.avif';
+/**
+ * File-input `accept`. The Android app's picker filters by MIME type, and Android does not know
+ * most RAW extensions (CR3, ARW, …): there, also accept images and generic binaries (unsupported
+ * files are skipped at import by name).
+ */
+export const ACCEPT =
+  (globalThis as { Capacitor?: { getPlatform?(): string } }).Capacitor?.getPlatform?.() === 'android'
+    ? `${ACCEPT_EXTS},image/*,application/octet-stream`
+    : ACCEPT_EXTS;
 
 export function detectFormat(name: string, head: Uint8Array): SourceFormat | null {
   const ext = name.split('.').pop()?.toLowerCase() ?? '';

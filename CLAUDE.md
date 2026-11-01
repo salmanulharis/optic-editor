@@ -30,6 +30,9 @@ npm run bench          # 48 MP synthetic: preview fps while dragging (incl. 16 m
 npm run lensfun:subset # regenerate src/io/lens/lensfun-subset.json from the lensfun database
 npm run models:fetch   # optional: AI models into public/models (gitignored) for self-hosting
 npm run icons          # PWA icons + Apple splash screens from public/icons/optic.svg
+npm run cap:sync       # web build copied into android/ and ios/ (Capacitor)
+npm run android:apk    # release APK → release/optic-<version>.apk (signing: android/keystore.properties)
+npm run native:assets  # native app icons + splash screens from public/icons/optic.svg
 ```
 
 `test:seams` and `bench` start Vite programmatically and drive `bench.html` (dev-only page, `src/bench/`) in headless Chrome/Edge via `playwright-core`. Set `CHROME_PATH` or `CHROME_CHANNEL` to choose the browser.
@@ -69,7 +72,7 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
 ## Architecture
 
 ### Recipe = single source of truth (`src/recipe/`)
-- `Recipe` (`schema.ts`, v3) is versioned and JSON-serialisable. `serialize.ts` migrates older versions step by step (`MIGRATIONS`), then `parseGroups` parses tolerantly and clamps every value. Presets reuse `parseGroups` for their partial recipes.
+- `Recipe` (`schema.ts`, v4) is versioned and JSON-serialisable. `serialize.ts` migrates older versions step by step (`MIGRATIONS`), then `parseGroups` parses tolerantly and clamps every value. Presets reuse `parseGroups` for their partial recipes.
 - v3 sections: `detail` (sharpen, nr), `effects` (texture, clarity, dehaze, grain, halation, bloom, vignette), `lens`, `geometry` (upright, guides, transform sliders, constrainCrop), `crop` (R-normalised rect, angle, aspect label, flips, rotate90).
 - v4: `masks` (`recipe/masks.ts`). Components live in the undistorted frame U (0…1), so they follow geometry:
   - gradients as parameters
@@ -189,6 +192,11 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - Otherwise: the tags exifr read are re-serialised.
   - Orientation is always written as 1 (pixels are exported upright).
 - `exportClient.ts` asks for the File System Access save handle *before* any await, since it needs the click's user activation. It falls back to `<a download>`. Virtual copies export under their own name.
+
+### Android / iOS apps (`android/`, `ios/`, `capacitor.config.ts`, docs/MOBILE.md)
+- Capacitor 8 shells load `dist/` from the bundle. They add COOP / COEP natively: `IsolatingWebViewClient.java` (Android) and `CrossOriginIsolation` in `ios/App/App/AppDelegate.swift`. Keep both if Capacitor is upgraded.
+- `src/app/native.ts` is the only place that talks to native code: `isNative()`, `saveFileNative` (cache → MediaStore on Android, share sheet on iOS; used by `downloadBlob` and preset `download`), incoming shared / opened files, the Android back button, haptics. Everything is a no-op on the web.
+- The IPA is built by `.github/workflows/ios.yml` (unsigned unless signing secrets exist). The APK is built locally.
 
 ### PWA, mobile, settings
 - **PWA**: `vite-plugin-pwa` in injectManifest mode, with `src/sw.ts`. The service worker:

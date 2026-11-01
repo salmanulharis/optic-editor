@@ -9,6 +9,7 @@ import { openPhoto } from '../../library/open';
 import { usePhotoImage } from '../../library/previews';
 import { useLibrary, useVisiblePhotos } from '../../state/libraryStore';
 import { PhotoBadges } from './PhotoBadges';
+import { haptic } from '../../app/native';
 
 const GAP = 6;
 const LABEL_H = 18;
@@ -102,7 +103,7 @@ export function Grid({ touch = false }: { touch?: boolean }) {
       if (longPress.current !== lp) return;
       lp.fired = true;
       useLibrary.getState().select(id, 'toggle');
-      try { navigator.vibrate?.(12); } catch { /* none */ }
+      haptic('medium');
     }, 480);
   };
   const cancelLongPress = () => { if (longPress.current && !longPress.current.fired) longPress.current = null; };
