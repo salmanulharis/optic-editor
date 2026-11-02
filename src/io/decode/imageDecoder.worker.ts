@@ -1,7 +1,7 @@
 /** Decode worker for non-RAW formats (HEIC/HEIF, JPEG, PNG, TIFF, WebP, AVIF). */
 import * as Comlink from 'comlink';
 import { decodeHeic } from './heicDecoder';
-import { makeDerivatives } from './imageOps';
+import { makeDerivatives, transferable } from './imageOps';
 import { decodeStandard } from './standardDecoder';
 import type { DecodeOptions, DecodeResult, ProgressFn, SourceFormat } from './types';
 
@@ -26,7 +26,7 @@ const api = {
       warnings: d.sourceColor.warnings,
     };
     // Shared buffers are visible to every thread already; only plain ArrayBuffers are transferred.
-    const transfers = [d.image.data.buffer, proxy.data.buffer, thumb.data.buffer].filter((b): b is ArrayBuffer => !(b instanceof SharedArrayBuffer));
+    const transfers = transferable([d.image.data.buffer, proxy.data.buffer, thumb.data.buffer]);
     return Comlink.transfer(result, transfers);
   },
 };

@@ -9,6 +9,16 @@ export function allocFloat(length: number): Float32Array {
   return new Float32Array(length);
 }
 
+/**
+ * Buffers that can be transferred to another thread: everything except SharedArrayBuffers (those
+ * are shared, not moved). `SharedArrayBuffer` is not even defined when the page is not
+ * cross-origin isolated (Android WebView never is), so never reference it unguarded.
+ */
+export function transferable(buffers: ArrayBufferLike[]): ArrayBuffer[] {
+  const SAB = (globalThis as { SharedArrayBuffer?: typeof SharedArrayBuffer }).SharedArrayBuffer;
+  return buffers.filter((b): b is ArrayBuffer => !(SAB && b instanceof SAB));
+}
+
 /** Precomputed area-average weights for resampling one axis from `src` to `dst` samples. */
 function axisWeights(src: number, dst: number) {
   const scale = src / dst;

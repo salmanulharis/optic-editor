@@ -12,7 +12,7 @@ import { COMPRESSION_JXL, TAG, dngColorProfile, isDng, isTiffLike, libRawColorPr
 import { decodeDngJxl } from './dngJxl';
 import { dngLensProfile } from './dngOpcodes';
 import type { LensProfile } from '../../geometry/lens';
-import { allocFloat, applyOrientation, makeDerivatives } from './imageOps';
+import { allocFloat, applyOrientation, makeDerivatives, transferable } from './imageOps';
 import type { CameraInfo, DecodeOptions, DecodeResult, FloatImage, ProgressFn } from './types';
 import type { RawColorProfile } from '../../color/whiteBalance';
 
@@ -163,7 +163,7 @@ const api = {
       lens,
     };
     // Shared buffers are visible to every thread already; only plain ArrayBuffers are transferred.
-    const transfers = [image.data.buffer, proxy.data.buffer, thumb.data.buffer].filter((b): b is ArrayBuffer => !(b instanceof SharedArrayBuffer));
+    const transfers = transferable([image.data.buffer, proxy.data.buffer, thumb.data.buffer]);
     return Comlink.transfer(result, transfers);
   },
 };

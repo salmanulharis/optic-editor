@@ -16,7 +16,7 @@
     "test:e2e": "playwright test",
     "models:fetch": "node scripts/fetch-models.mjs",
     "icons": "node scripts/build-icons.mjs",
-    "cap:sync": "npm run build && cap sync",
+    "cap:sync": "npm run build && cap sync android",
     "android:apk": "node scripts/build-android.mjs",
     "native:assets": "node scripts/build-native-assets.mjs"
   },
@@ -26,7 +26,6 @@
     "@capacitor/core": "^8.6.0",
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/haptics": "^8.0.2",
-    "@capacitor/ios": "^8.6.0",
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@jsquash/avif": "^2.1.1",

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * App icons and splash screens for the Android / iOS apps, from public/icons/optic.svg.
+ * App icons and splash screens for the Android app, from public/icons/optic.svg.
  * Renders the sources into assets/ (headless Chrome / Edge via playwright-core), then
- * @capacitor/assets writes every density into android/ and ios/:
+ * @capacitor/assets writes every density into android/:
  *   npm run native:assets
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -15,8 +15,8 @@ mkdirSync('assets', { recursive: true });
 const browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL ?? 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
 const page = await browser.newPage();
 
-// Variants of the logo: the full-bleed tile (iOS masks the corners itself), the glyph alone and
-// the tile background alone (the two layers of an Android adaptive icon).
+// Variants of the logo: the full-bleed tile (legacy square icon), the glyph alone and the tile
+// background alone (the two layers of an Android adaptive icon).
 const SVG = {
   tile: svg.replace(/rx="\d+"/, 'rx="0"'),
   glyph: svg.replace(/<rect [^>]*\/>/, ''),
@@ -33,7 +33,7 @@ async function render(file, w, h, { bg = 'transparent', logo = 1, art = 'logo' }
   writeFileSync(file, await page.screenshot({ omitBackground: bg === 'transparent', type: 'png' }));
 }
 
-// iOS icon: full-bleed square, no transparency (the system rounds the corners).
+// Source for the legacy (pre-Android 8) launcher icons.
 await render('assets/icon-only.png', 1024, 1024, { bg: BG, art: 'tile' });
 // Android adaptive icon: the ring inside the 66 % safe zone over the gradient layer.
 await render('assets/icon-foreground.png', 1024, 1024, { art: 'glyph', logo: 0.88 });
@@ -43,7 +43,7 @@ await render('assets/splash-dark.png', 2732, 2732, { bg: BG, logo: 0.2 });
 await browser.close();
 
 execSync(
-  `npx --yes @capacitor/assets@3 generate --android --ios --iconBackgroundColor "${BG}" --iconBackgroundColorDark "${BG}" --splashBackgroundColor "${BG}" --splashBackgroundColorDark "${BG}"`,
+  `npx --yes @capacitor/assets@3 generate --android --iconBackgroundColor "${BG}" --iconBackgroundColorDark "${BG}" --splashBackgroundColor "${BG}" --splashBackgroundColorDark "${BG}"`,
   { stdio: 'inherit' },
 );
-console.log('native icons and splash screens written to android/ and ios/');
+console.log('native icons and splash screens written to android/');

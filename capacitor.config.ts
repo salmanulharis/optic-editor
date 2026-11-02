@@ -1,10 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * Native shells for Android (APK) and iOS (IPA). They load the Vite build (dist/) from the app
- * bundle; the native projects add the COOP / COEP headers to every local response so the page is
- * cross-origin isolated (SharedArrayBuffer, threaded LibRaw) exactly like on the web.
- * Build: `npm run build && npx cap sync` (see docs/MOBILE.md).
+ * Native Android app (APK). It loads the Vite build (dist/) from the app bundle. Android WebView
+ * never runs a page cross-origin isolated, so the decoders run single-threaded there (same
+ * results as the web app, slower on very large files).
+ * Build: `npm run android:apk` (see docs/MOBILE.md).
  */
 const config: CapacitorConfig = {
   appId: 'in.techbysh.optic',
@@ -13,22 +13,16 @@ const config: CapacitorConfig = {
   backgroundColor: '#1c1c1c',
   loggingBehavior: 'debug',
   server: {
-    // https://localhost: a secure context (OPFS, crypto, SharedArrayBuffer once isolated).
+    // https://localhost: a secure context (OPFS, crypto).
     androidScheme: 'https',
-    iosScheme: 'capacitor',
+    // Debugging only: OPTIC_DEV_URL=http://localhost:5173 loads the Vite dev server (adb reverse).
+    ...(process.env.OPTIC_DEV_URL ? { url: process.env.OPTIC_DEV_URL, cleartext: true } : {}),
   },
   android: {
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: false,
-  },
-  ios: {
-    // The page handles safe areas itself (viewport-fit=cover + env(safe-area-inset-*)).
-    contentInset: 'never',
-    scrollEnabled: false,
-    limitsNavigationsToAppBoundDomains: false,
-    webContentsDebuggingEnabled: false,
-    preferredContentMode: 'mobile',
+    // OPTIC_DEBUG=1 npm run android:apk → inspectable with chrome://inspect (off in releases).
+    webContentsDebuggingEnabled: process.env.OPTIC_DEBUG === '1',
   },
   plugins: {
     SplashScreen: {

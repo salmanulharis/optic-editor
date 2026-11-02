@@ -90,3 +90,29 @@ export async function decodeHeic(bytes: Uint8Array): Promise<StandardDecoded> {
     decoder.decoder && lib.heif_context_free?.(decoder.decoder);
   }
 }
+
+/** Largest HEIC decoded for a quick import preview (RGBA8 = 4 bytes per pixel in memory). */
+const PREVIEW_MAX_PIXELS = 26e6;
+
+/**
+ * 8-bit RGBA of the primary image (upright), for quick import thumbnails where the browser
+ * cannot decode HEIC itself (Chrome, Android WebView). Null for very large images: those get
+ * their thumbnail from the full render later.
+ */
+export async function decodeHeicPreview(bytes: Uint8Array): Promise<ImageData | null> {
+  const lib = await getLibheif();
+  const decoder = new lib.HeifDecoder();
+  try {
+    const images = decoder.decode(bytes);
+    if (!images?.length) return null;
+    const primary = images.find((i: Libheif) => i.is_primary?.()) ?? images[0];
+    const width: number = primary.get_width();
+    const height: number = primary.get_height();
+    if (!width || !height || width * height > PREVIEW_MAX_PIXELS) return null;
+    const out = new ImageData(width, height);
+    const done = await new Promise<ImageData | null>((resolve) => primary.display(out, (d: ImageData | null) => resolve(d)));
+    return done;
+  } finally {
+    decoder.decoder && lib.heif_context_free?.(decoder.decoder);
+  }
+}

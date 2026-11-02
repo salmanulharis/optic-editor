@@ -1,24 +1,24 @@
 /**
- * Native shell integration (Capacitor: Android APK, iOS IPA). Everything here is a no-op in the
- * browser, so the web / PWA build behaves exactly as before.
+ * Android app integration (Capacitor). Everything here is a no-op in the browser, so the web / PWA
+ * build behaves exactly as before.
  *
  *  - Files the app produces (exports, ZIPs, preset packs) cannot be "downloaded" inside a WebView:
- *    they are written to the app cache in chunks, then saved to the gallery / Downloads (Android,
- *    `OpticFiles` plugin in MainActivity) or offered through the share sheet (iOS: Save Image,
- *    Save to Files, AirDrop, …).
- *  - The Android back button closes the open sheet / dialog, then leaves the editor, then exits.
- *  - The splash screen hides once the first frame is up; haptics replace `navigator.vibrate`
- *    (not available on iOS).
+ *    they are written to the app cache in chunks, then saved to the gallery / Downloads
+ *    (`OpticFiles` plugin, MediaStore), or offered through the share sheet on Android 7–9.
+ *  - Photos picked, shared to Optic or opened with it are read natively (`pickPhotos`,
+ *    `takeIncoming`), so file names, MIME types and sizes are reliable.
+ *  - The back button closes the open sheet / dialog, then leaves the editor, then exits.
+ *  - The splash screen hides once the first frame is up; haptics use the native engine.
  *
- * The native projects add the cross-origin isolation headers to every local response
- * (android/.../IsolatingWebViewClient.java, ios/App/App/CrossOriginIsolation.swift), so
- * SharedArrayBuffer and the threaded RAW decoder work like on the web.
+ * Android WebView never makes a page cross-origin isolated, whatever headers it gets (measured on
+ * WebView 124: shared memory cannot be posted to workers). The app therefore runs non-isolated:
+ * `SharedArrayBuffer` is undefined and the decoders run single-threaded. Code must never reference
+ * `SharedArrayBuffer` unguarded (see `transferable` in io/decode/imageOps.ts).
  */
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 export const isNative = (): boolean => Capacitor.isNativePlatform();
 export const isAndroidApp = (): boolean => Capacitor.getPlatform() === 'android';
-export const isIOSApp = (): boolean => Capacitor.getPlatform() === 'ios';
 
 interface IncomingFile { path: string; name: string; mime?: string }
 interface OpticFilesPlugin {
@@ -66,14 +66,12 @@ export async function saveFileNative(blob: Blob, name: string): Promise<boolean>
   const mime = blob.type || 'application/octet-stream';
   try {
     const uri = await writeCache(blob, name);
-    if (isAndroidApp()) {
-      try {
-        const { location } = await OpticFiles.saveToDevice({ path: uri, name, mime });
-        toast(`Saved to ${location}`);
-        return true;
-      } catch (e) {
-        console.warn('[optic] MediaStore save failed, sharing instead', e);
-      }
+    try {
+      const { location } = await OpticFiles.saveToDevice({ path: uri, name, mime });
+      toast(`Saved to ${location}`);
+      return true;
+    } catch (e) {
+      console.warn('[optic] MediaStore save failed, sharing instead', e);
     }
     const { Share } = await import('@capacitor/share');
     await Share.share({ title: name, files: [uri], dialogTitle: `Save ${name}` });
@@ -126,7 +124,7 @@ async function initBackButton() {
   });
 }
 
-/** Read native files (cache or Documents/Inbox) through the local server and import them. */
+/** Read native cache files through the local server and import them. */
 async function importNative(files: IncomingFile[]) {
   if (!files.length) return;
   const list = await Promise.all(files.map(async (f) => {
@@ -138,31 +136,17 @@ async function importNative(files: IncomingFile[]) {
   ingest(list);
 }
 
-/** Photos shared to Optic (Android share sheet / "Open with") and files opened in it (iOS "Open in"). */
+/** Photos shared to Optic (share sheet / "Open with"). */
 async function initIncoming() {
-  if (isAndroidApp()) {
-    const take = () => OpticFiles.takeIncoming().then((r) => importNative(r.files)).catch((e) => toast(`Could not open the shared photo: ${(e as Error).message}`, true));
-    await OpticFiles.addListener('incoming', take);
-    // The launch intent is copied in the background; poll briefly for it.
-    for (const ms of [300, 1200, 3000]) setTimeout(take, ms);
-  }
-  if (isIOSApp()) {
-    const { App } = await import('@capacitor/app');
-    const open = (url: string) => {
-      if (!url.startsWith('file:')) return;
-      const name = decodeURIComponent(url.split('/').pop() ?? 'photo.jpg');
-      void importNative([{ path: url, name }]).catch((e) => toast(`Could not open ${name}: ${(e as Error).message}`, true));
-    };
-    await App.addListener('appUrlOpen', (e) => open(e.url));
-    const launch = await App.getLaunchUrl();
-    if (launch?.url) open(launch.url);
-  }
+  const take = () => OpticFiles.takeIncoming().then((r) => importNative(r.files)).catch((e) => toast(`Could not open the shared photo: ${(e as Error).message}`, true));
+  await OpticFiles.addListener('incoming', take);
+  // The launch intent is copied in the background; poll briefly for it.
+  for (const ms of [300, 1200, 3000]) setTimeout(take, ms);
 }
 
 export async function initNative() {
   if (!isNative()) return;
   document.documentElement.classList.add('native-app', `native-${Capacitor.getPlatform()}`);
-  if (!globalThis.crossOriginIsolated) console.warn('[optic] native shell is not cross-origin isolated: check the header injection');
   // Status / navigation bar icons follow the app theme (light icons on Optic's dark themes).
   const { SystemBars, SystemBarsStyle } = await import('@capacitor/core');
   const bars = () => {
@@ -171,7 +155,7 @@ export async function initNative() {
   };
   bars();
   new MutationObserver(bars).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  if (isAndroidApp()) void initBackButton();
+  void initBackButton();
   void initIncoming();
   void cleanCache();
   requestAnimationFrame(() => setTimeout(() => {

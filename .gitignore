@@ -9,5 +9,4 @@ test-results/
 playwright-report/
 # Mobile apps: icon sources (rendered by `npm run native:assets`) and build outputs
 assets/
-build-ios/
 release/

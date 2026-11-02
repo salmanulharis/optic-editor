@@ -30,7 +30,7 @@ npm run bench          # 48 MP synthetic: preview fps while dragging (incl. 16 m
 npm run lensfun:subset # regenerate src/io/lens/lensfun-subset.json from the lensfun database
 npm run models:fetch   # optional: AI models into public/models (gitignored) for self-hosting
 npm run icons          # PWA icons + Apple splash screens from public/icons/optic.svg
-npm run cap:sync       # web build copied into android/ and ios/ (Capacitor)
+npm run cap:sync       # web build copied into android/ (Capacitor)
 npm run android:apk    # release APK → release/optic-<version>.apk (signing: android/keystore.properties)
 npm run native:assets  # native app icons + splash screens from public/icons/optic.svg
 ```
@@ -193,10 +193,10 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - Orientation is always written as 1 (pixels are exported upright).
 - `exportClient.ts` asks for the File System Access save handle *before* any await, since it needs the click's user activation. It falls back to `<a download>`. Virtual copies export under their own name.
 
-### Android / iOS apps (`android/`, `ios/`, `capacitor.config.ts`, docs/MOBILE.md)
-- Capacitor 8 shells load `dist/` from the bundle. They add COOP / COEP natively: `IsolatingWebViewClient.java` (Android) and `CrossOriginIsolation` in `ios/App/App/AppDelegate.swift`. Keep both if Capacitor is upgraded.
-- `src/app/native.ts` is the only place that talks to native code: `isNative()`, `saveFileNative` (cache → MediaStore on Android, share sheet on iOS; used by `downloadBlob` and preset `download`), incoming shared / opened files, the Android back button, haptics. Everything is a no-op on the web.
-- The IPA is built by `.github/workflows/ios.yml` (unsigned unless signing secrets exist). The APK is built locally.
+### Android app (`android/`, `capacitor.config.ts`, docs/MOBILE.md)
+- Capacitor 8 loads `dist/` from the APK. **Android WebView is never cross-origin isolated**: `SharedArrayBuffer` is undefined, decoders run single-threaded, images are copied between threads. Never reference `SharedArrayBuffer` unguarded (`transferable` / `allocFloat` in `io/decode/imageOps.ts`); an unguarded `instanceof` made every photo fail on Android.
+- `src/app/native.ts` is the only place that talks to native code: `isNative()`, `saveFileNative` (cache → MediaStore via `OpticFilesPlugin.java`; used by `downloadBlob` and preset `download`), shared / opened files, the back button, haptics. Everything is a no-op on the web.
+- Test on an emulator started with `-gpu host`: its default SwiftShader renderer corrupts uniforms in large shaders (magenta RAWs). `OPTIC_DEBUG=1` / `OPTIC_DEV_URL` are documented in docs/MOBILE.md. There is no iOS app.
 
 ### PWA, mobile, settings
 - **PWA**: `vite-plugin-pwa` in injectManifest mode, with `src/sw.ts`. The service worker:
