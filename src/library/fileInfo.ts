@@ -8,6 +8,7 @@ import { detectFormat } from '../io/decode/decodeClient';
 import type { SourceFormat } from '../io/decode/types';
 import { cameraInfoFromExif, orientationFromExif, readExifBlocks, type ExifBlocks } from '../io/metadata/exif';
 import { TiffReader } from '../io/metadata/tiffReader';
+import { PREVIEW_EDGE, THUMB_EDGE } from './previewSizes';
 
 const MB = 1024 * 1024;
 
@@ -131,8 +132,7 @@ function orient(bmp: ImageBitmap, orientation: number, edge: number): OffscreenC
   return c;
 }
 
-export const PREVIEW_EDGE = 2560;
-export const THUMB_EDGE = 512;
+export { PREVIEW_EDGE, THUMB_EDGE } from './previewSizes';
 
 export interface QuickPreview {
   thumb: Blob;

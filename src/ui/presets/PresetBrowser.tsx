@@ -16,9 +16,11 @@ import { BUILTIN_PRESETS } from '../../presets/builtin';
 import { BUILTIN_GROUP_ORDER, type Preset } from '../../presets/types';
 import { useEdit } from '../../state/editStore';
 import { useImage } from '../../state/imageStore';
-import { buildPack, download, importFiles, presetToJson, usePresets } from '../../state/presetStore';
+import { useT } from '../../i18n';
+import { buildPack, download, presetToJson, usePresets } from '../../state/presetStore';
 import { useUi } from '../../state/uiStore';
 import { Slider } from '../controls/Slider';
+import { ImportReportDialog, ImportStatus, PRESET_IMPORT_ACCEPT, usePresetImport } from './ImportReport';
 import { useThumbnail } from './thumbnails';
 
 interface Menu { x: number; y: number; preset: Preset }
@@ -33,9 +35,14 @@ export function PresetBrowser() {
   const [q, setQ] = useState('');
   const [closed, setClosed] = useState<Record<string, boolean>>({ Recent: false });
   const [menu, setMenu] = useState<Menu | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const t = useT();
   const importRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // After an import, open the group the new presets landed in.
+  const imp = usePresetImport((group) => {
+    if (group) setClosed((c) => ({ ...c, [group === 'My Presets' ? group : `My Presets · ${group}`]: false }));
+  });
 
   const all = useMemo(() => [...BUILTIN_PRESETS, ...user], [user]);
   const match = (p: Preset) => {
@@ -61,13 +68,18 @@ export function PresetBrowser() {
     if (step) { e.preventDefault(); tiles[Math.max(0, Math.min(tiles.length - 1, i + step))]?.focus(); }
   };
 
-  const doImport = async (files: File[]) => {
-    const r = await importFiles(files);
-    setStatus(`Imported ${r.presets} preset(s), ${r.luts} LUT(s)${r.errors.length ? ` · ${r.errors.join('; ')}` : ''}`);
-  };
+  const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes('Files');
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" onClick={() => setMenu(null)}>
+    <div className="relative flex min-h-0 flex-1 flex-col" onClick={() => setMenu(null)}
+      onDragOver={(e) => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDragging(true); } }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault(); // tells the app-wide drop handler this drop is taken (no photo import)
+        setDragging(false);
+        void imp.run([...e.dataTransfer.files]);
+      }}>
       <AppliedHeader />
       <div className="flex items-center gap-1 border-b border-line px-2 py-1.5">
         <input className="input min-w-0 flex-1" placeholder="Search presets" value={q} onChange={(e) => setQ(e.target.value)}
@@ -80,13 +92,20 @@ export function PresetBrowser() {
       <div className="flex items-center gap-1 border-b border-line px-2 py-1 text-[11px]">
         <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!hasImage}
           onClick={() => useUi.getState().set({ createPresetOpen: true })}>+ Create</button>
-        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink" onClick={() => importRef.current?.click()}>Import</button>
+        <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={imp.busy}
+          title={t('presets.import.title')} aria-label={t('presets.import.aria')} onClick={() => importRef.current?.click()}>{t('presets.import')}</button>
         <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!user.length}
           onClick={() => download('my-presets.opticpack', buildPack(user) as BlobPart, 'application/zip')}>Export pack</button>
-        <input ref={importRef} type="file" multiple accept=".json,.opticpack,.zip,.cube,.png" className="hidden"
-          onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void doImport(f); e.target.value = ''; }} />
+        <input ref={importRef} type="file" multiple accept={PRESET_IMPORT_ACCEPT} className="hidden" tabIndex={-1} aria-hidden
+          onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void imp.run(f); e.target.value = ''; }} />
       </div>
-      {status && <div className="border-b border-line px-2 py-1 text-[10px] text-ink-dim" onClick={() => setStatus(null)}>{status} ✕</div>}
+      <ImportStatus imp={imp} className="border-b border-line px-2 py-1 text-[10px] text-ink-dim" />
+      <ImportReportDialog imp={imp} />
+      {dragging && (
+        <div className="pointer-events-none absolute inset-1 z-20 flex items-center justify-center rounded border-2 border-dashed border-edge bg-panel/90 px-4 text-center text-xs text-ink">
+          {t('presets.import.drop')}
+        </div>
+      )}
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" onKeyDown={onKeyNav} onMouseLeave={() => previewPreset(null)}>
         {sections.map(([name, list]) => {
           const items = list.filter(match);
@@ -105,7 +124,7 @@ export function PresetBrowser() {
                   <div className={view === 'grid' ? 'grid grid-cols-2 gap-1.5 px-2 pb-2' : 'pb-1'}>
                     {items.map((p) => <PresetTile key={`${name}-${p.id}`} preset={p} view={view} fav={favorites.includes(p.id)} onMenu={setMenu} />)}
                   </div>
-                ) : <p className="px-3 pb-2 text-[11px] text-ink-faint">Save your edits with “+ Create”, or import presets.</p>
+                ) : <p className="px-3 pb-2 text-[11px] text-ink-faint">{t('presets.import.empty')}</p>
               )}
             </section>
           );

@@ -3,7 +3,7 @@ import { ACCEPT } from '../io/decode/decodeClient';
 import { activeCopy, useEdit } from '../state/editStore';
 import { type LoadedImage, useImage } from '../state/imageStore';
 import { type CompareMode, useUi } from '../state/uiStore';
-import { ExportProgress } from '../ui/export/ExportDialog';
+import { ExportProgress } from '../ui/export/ExportProgress';
 import { ImportProgress } from '../ui/library/ImportDialog';
 import { BatchMenu, BatchProgress } from '../ui/library/BatchMenu';
 import { PwaStatus } from '../ui/PwaStatus';

@@ -1,6 +1,6 @@
 /** Main-thread entry point for decoding: picks a worker, reports progress, supports cancel. */
 import * as Comlink from 'comlink';
-import { cameraInfoFromExif, readExifBlocks, type ExifBlocks } from '../metadata/exif';
+import type { ExifBlocks } from '../metadata/exif';
 import type { ImageDecoderApi } from './imageDecoder.worker';
 import type { RawDecoderApi } from './rawDecoder.worker';
 import type { DecodeResult, ProgressFn, SourceFormat } from './types';
@@ -47,7 +47,11 @@ export function decodeFile(file: File, proxyLongEdge: number, onProgress: Progre
       if (cancelled) return;
       const format = detectFormat(file.name, bytes.subarray(0, 32));
       if (!format) throw new Error(`Unsupported file type: ${file.name}`);
-      const exifPromise = readExifBlocks(file);
+      // EXIF (and exifr) load in parallel with the decode, so they stay out of the app's first chunk.
+      const exifPromise = import('../metadata/exif').then(async (m) => {
+        const exif = await m.readExifBlocks(file);
+        return { exif, fromExif: m.cameraInfoFromExif(exif) };
+      });
       const progress = Comlink.proxy(onProgress);
       let result: DecodeResult;
       if (format === 'dng' || format === 'raw') {
@@ -59,9 +63,8 @@ export function decodeFile(file: File, proxyLongEdge: number, onProgress: Progre
         const api = Comlink.wrap<ImageDecoderApi>(worker);
         result = await api.decode(Comlink.transfer(bytes, [bytes.buffer]), format, { proxyLongEdge }, progress);
       }
-      const exif = await exifPromise;
+      const { exif, fromExif } = await exifPromise;
       // Prefer EXIF for display info; LibRaw fills the gaps for vendor RAWs exifr cannot read.
-      const fromExif = cameraInfoFromExif(exif);
       for (const [k, v] of Object.entries(fromExif)) if (v !== undefined) (result.info as Record<string, unknown>)[k] = v;
       resolve({ result, exif });
     })()

@@ -44,7 +44,7 @@ import { BottomSheet } from './BottomSheet';
 import { PresetStrip } from './PresetStrip';
 import { ImportProgress } from '../library/ImportDialog';
 import { BatchProgress } from '../library/BatchMenu';
-import { ExportProgress } from '../export/ExportDialog';
+import { ExportProgress } from '../export/ExportProgress';
 import { PwaStatus } from '../PwaStatus';
 
 type Tab = 'presets' | 'light' | 'color' | 'effects' | 'detail' | 'crop' | 'masks' | 'export';

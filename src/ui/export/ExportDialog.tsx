@@ -2,8 +2,7 @@
  * Export: the single-photo dialog (editor, Ctrl/Cmd+E), the batch dialog (the selection) and the
  * export queue panel. Both dialogs share the settings form and export presets (built-in + saved).
  */
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { create } from 'zustand';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { COLOR_SPACES, type ColorSpaceId } from '../../color/matrices';
 import { pickSaveTarget, runExport } from '../../io/encode/exportClient';
 import {
@@ -30,25 +29,9 @@ import { effectiveRecipe } from '../../recipe/schema';
 import { type LoadedImage, useImage } from '../../state/imageStore';
 import { targetIds, useLibrary } from '../../state/libraryStore';
 import { useUi } from '../../state/uiStore';
+import { useFocusTrap } from '../focusTrap';
+import { useExportJob } from './ExportProgress';
 import { useSettings } from '../../state/settingsStore';
-
-interface ExportJobState {
-  running: boolean;
-  fraction: number;
-  label: string;
-  error: string | null;
-  controller: AbortController | null;
-  set(p: Partial<ExportJobState>): void;
-}
-
-export const useExportJob = create<ExportJobState>((set) => ({
-  running: false,
-  fraction: 0,
-  label: '',
-  error: null,
-  controller: null,
-  set: (p) => set(p),
-}));
 
 // ---------------------------------------------------------------------------
 // Presets
@@ -284,9 +267,11 @@ function PresetBar({ presetId, setPreset, s }: { presetId: string; setPreset(id:
 }
 
 function Shell({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, true);
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl" role="dialog" aria-modal="true" aria-label={title}
+      <div ref={ref} className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl" role="dialog" aria-modal="true" aria-label={title}
         onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
         <h2 className="mb-3 text-sm font-medium">{title}</h2>
         {children}
@@ -502,36 +487,5 @@ export function ExportQueuePanel() {
   );
 }
 
-/** Small progress pill for the top bar: single export, or the batch queue (click to show it). */
-export function ExportProgress() {
-  const job = useExportJob();
-  const q = useExportQueue((s) => s.job);
-  const panelOpen = useExportQueue((s) => s.panelOpen);
-  if (q && !panelOpen && (q.status === 'running' || q.status === 'paused' || q.status === 'interrupted')) {
-    const done = q.items.filter((i) => i.state === 'done').length;
-    return <button className="rounded bg-hover px-2 py-1 text-[11px] text-ink" onClick={() => useExportQueue.getState().set({ panelOpen: true })}>Export {done}/{q.items.length}{q.status !== 'running' ? ` (${q.status})` : ''}</button>;
-  }
-  if (!job.running && !job.label && !job.error) return null;
-  if (job.error && !job.running) {
-    return (
-      <button className="rounded bg-[#4a2626] px-2 py-1 text-[11px] text-[#f0b0b0]" onClick={() => useExportJob.getState().set({ error: null })}>
-        Export failed — {job.error.slice(0, 60)} ✕
-      </button>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2 text-[11px] text-ink-dim" role="status" aria-live="polite">
-      {job.running && (
-        <div className="h-1.5 w-24 overflow-hidden rounded bg-hover">
-          <div className="h-full bg-meter transition-[width]" style={{ width: `${Math.round(job.fraction * 100)}%` }} />
-        </div>
-      )}
-      <span>{job.label}</span>
-      {job.running && (
-        <button className="text-ink-faint hover:text-ink" onClick={() => job.controller?.abort()} title="Cancel export" aria-label="Cancel export">✕</button>
-      )}
-    </div>
-  );
-}
-
 export { baseSettings };
+export { ExportProgress, useExportJob } from './ExportProgress';

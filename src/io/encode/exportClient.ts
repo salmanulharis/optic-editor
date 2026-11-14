@@ -4,7 +4,6 @@ import { aiBitmaps } from '../../library/previews';
 import { effectiveRecipe } from '../../recipe/schema';
 import type { Recipe } from '../../recipe/schema';
 import type { LoadedImage } from '../../state/imageStore';
-import { extractJpegExif } from '../metadata/exif';
 import { lutRegistry } from '../../pipeline/lutRegistry';
 import { renderFullResolution } from './exportRender';
 import { isIOS } from '../../ui/mobile/layout';
@@ -43,6 +42,7 @@ export async function renderAndEncode(
     const api = Comlink.wrap<ExportWorkerApi>(worker);
     let sourceJpegExif: Uint8Array | null = null;
     if (image.format === 'jpeg' && settings.metadata !== 'strip') {
+      const { extractJpegExif } = await import('../metadata/exif');
       sourceJpegExif = extractJpegExif(new Uint8Array(await image.file.slice(0, 256 * 1024).arrayBuffer()));
     }
     const eff = effectiveRecipe(recipe, image.asShot);

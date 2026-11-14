@@ -119,5 +119,20 @@ export default defineConfig({
     // which breaks if Vite pre-bundles them.
     exclude: ['libraw-wasm', 'libheif-js', '@jsquash/jpeg', '@jsquash/png', 'jxl-oxide-wasm', 'onnxruntime-web', '@jsquash/avif', '@jsquash/jxl'],
   },
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    rollupOptions: {
+      output: {
+        // Libraries that rarely change get chunks of their own, so an app update doesn't invalidate
+        // them in the browser / service-worker cache. (Worker bundles have their own output.)
+        manualChunks(id) {
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
+          if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) return 'dexie';
+          // The 64 built-in preset JSON files: data, versioned separately from the code.
+          if (/[\\/]src[\\/]presets[\\/]builtin[\\/].+\.json$/.test(id)) return 'presets-builtin';
+          return undefined;
+        },
+      },
+    },
+  },
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { fromDataTransfer, isSupported, reviewImport } from '../library/importer';
 import { startLibrarySync } from '../library/open';
 import { useLibrary } from '../state/libraryStore';
@@ -9,11 +9,8 @@ import { MobileApp } from '../ui/mobile/MobileApp';
 import { useMobileLayout } from '../ui/mobile/layout';
 import { useImage } from '../state/imageStore';
 import { Viewer } from '../ui/canvas/Viewer';
-import { BatchExportDialog, ExportDialog, ExportQueuePanel } from '../ui/export/ExportDialog';
-import { restoreExportQueue } from '../library/exportQueue';
+import { restoreExportQueue, useExportQueue } from '../library/exportQueue';
 import { initPwa } from './pwa';
-import { SettingsDialog } from '../ui/SettingsDialog';
-import { Onboarding, ShortcutsOverlay } from '../ui/Overlays';
 import { HistogramView } from '../ui/histogram/Histogram';
 import { ColorMixerPanel } from '../ui/panels/ColorMixerPanel';
 import { CurvePanel } from '../ui/panels/CurvePanel';
@@ -42,6 +39,35 @@ import { resetAll } from './presetActions';
 import { useKeyboard } from './keyboard';
 import { openFile } from './openFile';
 import { TopBar } from './TopBar';
+import { useSettings } from '../state/settingsStore';
+
+// Rarely opened UI loads on first use (the service worker precaches these chunks for offline use).
+const ExportDialog = lazy(() => import('../ui/export/ExportDialog').then((m) => ({ default: m.ExportDialog })));
+const BatchExportDialog = lazy(() => import('../ui/export/ExportDialog').then((m) => ({ default: m.BatchExportDialog })));
+const ExportQueuePanel = lazy(() => import('../ui/export/ExportDialog').then((m) => ({ default: m.ExportQueuePanel })));
+const SettingsDialog = lazy(() => import('../ui/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
+const ShortcutsOverlay = lazy(() => import('../ui/Overlays').then((m) => ({ default: m.ShortcutsOverlay })));
+const Onboarding = lazy(() => import('../ui/Overlays').then((m) => ({ default: m.Onboarding })));
+
+/** The lazily loaded dialogs, each mounted only while it is open. */
+function LazyDialogs() {
+  const exportOpen = useUi((s) => s.exportOpen);
+  const batchExportOpen = useUi((s) => s.batchExportOpen);
+  const settingsOpen = useUi((s) => s.settingsOpen);
+  const shortcutsOpen = useUi((s) => s.shortcutsOpen);
+  const queueOpen = useExportQueue((s) => !!s.job && s.panelOpen);
+  const onboardingDone = useSettings((s) => s.onboardingDone);
+  return (
+    <Suspense fallback={null}>
+      {exportOpen && <ExportDialog />}
+      {batchExportOpen && <BatchExportDialog />}
+      {queueOpen && <ExportQueuePanel />}
+      {settingsOpen && <SettingsDialog />}
+      {shortcutsOpen && <ShortcutsOverlay />}
+      {!onboardingDone && <Onboarding />}
+    </Suspense>
+  );
+}
 
 function EmptyState() {
   const total = useLibrary((s) => s.photos.length);
@@ -131,10 +157,12 @@ export function App() {
     const over = (e: DragEvent) => e.dataTransfer?.types.includes('Files') && e.preventDefault();
     const leave = () => { depth = Math.max(0, depth - 1); if (!depth) setDragOver(false); };
     const drop = (e: DragEvent) => {
+      // A panel that handled the drop itself (presets dropped on the preset browser) prevents default.
+      const handled = e.defaultPrevented;
       e.preventDefault();
       depth = 0;
       setDragOver(false);
-      if (!e.dataTransfer) return;
+      if (handled || !e.dataTransfer) return;
       // A single photo dropped on the editor opens it; anything else goes through the import dialog.
       const single = useLibrary.getState().view === 'editor' && e.dataTransfer.items.length === 1 && e.dataTransfer.files.length === 1 && isSupported(e.dataTransfer.files[0].name);
       if (single) { openFile(e.dataTransfer.files[0]); return; }
@@ -161,15 +189,10 @@ export function App() {
       )}
       <ImportDialog />
       <BatchDialogs />
-      <ExportDialog />
-      <BatchExportDialog />
-      <ExportQueuePanel />
       <CreatePresetDialog />
       <CopyPasteDialog />
       <SnapshotDialog />
-      <SettingsDialog />
-      <ShortcutsOverlay />
-      <Onboarding />
+      <LazyDialogs />
     </>
   );
   if (mobile) return <><MobileApp />{dialogs}</>;

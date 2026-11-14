@@ -1,14 +1,17 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { copySettings, pasteSettings, presetFromRecipe } from '../../app/presetActions';
 import { GROUP_LABELS, PHOTO_SPECIFIC_GROUPS, PRESET_GROUPS, type PresetGroup } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
 import { usePresets } from '../../state/presetStore';
 import { useUi } from '../../state/uiStore';
+import { useFocusTrap } from '../focusTrap';
 
 export function Modal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, true);
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label={title} className="w-full max-w-md rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
         onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') onClose(); }}>
         <h2 className="mb-3 text-sm font-medium">{title}</h2>
         {children}
@@ -59,10 +62,10 @@ export function CreatePresetDialog() {
   };
   return (
     <Modal title="Create preset" onClose={close}>
-      <label className="block text-[11px] uppercase tracking-wider text-ink-faint">Name</label>
-      <input autoFocus className="input mb-2 mt-0.5 w-full" value={name} onChange={(e) => setName(e.target.value)} placeholder="My look" />
-      <label className="block text-[11px] uppercase tracking-wider text-ink-faint">Group</label>
-      <input className="input mb-2 mt-0.5 w-full" list="optic-preset-groups" value={group} onChange={(e) => setGroup(e.target.value)} />
+      <label htmlFor="optic-preset-name" className="block text-[11px] uppercase tracking-wider text-ink-faint">Name</label>
+      <input id="optic-preset-name" autoFocus className="input mb-2 mt-0.5 w-full" value={name} onChange={(e) => setName(e.target.value)} placeholder="My look" />
+      <label htmlFor="optic-preset-group" className="block text-[11px] uppercase tracking-wider text-ink-faint">Group</label>
+      <input id="optic-preset-group" className="input mb-2 mt-0.5 w-full" list="optic-preset-groups" value={group} onChange={(e) => setGroup(e.target.value)} />
       <datalist id="optic-preset-groups">{existing.map((g) => <option key={g} value={g} />)}</datalist>
       <div className="mb-1 text-[11px] uppercase tracking-wider text-ink-faint">Include</div>
       <GroupChecklist value={groups} onChange={setGroups} />

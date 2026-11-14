@@ -3,6 +3,7 @@
  * the open photo's document is mirrored into its record (recipe, edited flag, copies, preset) and,
  * once the edits pause, its cached previews are re-rendered.
  */
+import { ensureAiForRecipe } from '../app/maskActions';
 import { proxyLongEdge } from '../app/openFile';
 import { maskRegistry } from '../pipeline/maskRegistry';
 import { applyPreset } from '../presets/apply';
@@ -40,7 +41,6 @@ export async function openPhoto(id: string) {
     await useLibrary.getState().patch([id], () => ({ pendingPreset: null }));
     useEdit.getState().commit(`Preset: ${pending.name} (${Math.round(rec.pendingPreset!.amount)}%)`);
   }
-  const { ensureAiForRecipe } = await import('../app/maskActions');
   ensureAiForRecipe(useEdit.getState().recipe);
 }
 

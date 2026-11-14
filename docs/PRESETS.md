@@ -120,10 +120,61 @@ When you save your own preset with *Save a separate non-RAW variant*, the same v
   default; tick them explicitly to include them. Copy / paste settings uses the same defaults. Presets are saved in IndexedDB under *My Presets* (or your group).
 - **Right-click a preset:** Apply, Apply at 50 %, Duplicate as my preset (built-ins are read-only),
   Rename / Delete (your presets), Export JSON.
-- **Import** accepts `.json` presets, `.opticpack` bundles, and `.cube` / Hald `.png` LUTs.
+- **Import** accepts `.json` presets, `.opticpack` bundles, `.cube` / Hald `.png` LUTs, and
+  Lightroom / Camera Raw presets (below), on their own or in a `.zip`. Files can also be dropped on
+  the preset browser.
 - **Export pack** writes an `.opticpack`: a standard zip with `presets/<id>.json` and the `.cube` files of
   any user LUTs they reference (`luts/<id>.cube`). On import, LUTs get new ids and the presets are
   re-pointed at them. Packs zipped with other tools work too (stored or deflate entries).
+
+## Lightroom and Camera Raw presets
+
+`src/presets/lightroom/` converts Lightroom presets into ordinary version 3 Optic presets. It is
+pure TypeScript with no DOM, lazy-loaded on the first Lightroom file, and unit-tested in
+`tests/unit/lightroom.test.ts` (fixtures in `tests/unit/fixtures/lightroom/`).
+
+| Input | Reader | Treated as |
+|---|---|---|
+| `.xmp` with `crs:PresetType` (Lightroom Classic 7.3+, Lightroom, Camera Raw) | `xmp.ts`: a small tokenizer, top-level `rdf:Description` only, never resolves entities | **preset**: every group with a field present is included |
+| `.xmp` without `crs:PresetType` (a photo's sidecar) | `xmp.ts` | **snapshot** (see below) |
+| `.lrtemplate` (Lightroom 7.2 and older) | `lrtemplate.ts`: a Lua-table literal parser (never evaluated); `type` must be `Develop` | **preset** |
+| `.dng` (Lightroom Mobile "DNG presets") | `dng.ts`: TIFF tag 700, else a scan for `<x:xmpmeta` | **snapshot** |
+
+A **snapshot** holds all of a photo's settings, so `convert.ts` drops groups that are still neutral
+and skips the photo-specific groups (white balance, exposure, noise reduction, lens, geometry), like
+Optic's copy / paste defaults. They are reported as "photo-specific settings".
+
+**Mapping** (`convert.ts`). Most of Lightroom's ranges and defaults are Optic's, so these are 1:1:
+- Basic: `Exposure2012` → `exposure`; `Contrast2012`, `Highlights2012`, `Shadows2012`, `Whites2012`, `Blacks2012` → `light`.
+- Mixer and B&W: `HueAdjustment*` / `SaturationAdjustment*` / `LuminanceAdjustment*` → `hsl`; `ConvertToGrayscale` + `GrayMixer*` → `bw`.
+- Colour: calibration (`RedHue` … `ShadowTint`), `Vibrance` / `Saturation`.
+- Effects: `Texture` / `Clarity2012` / `Dehaze`; grain (`GrainFrequency` → roughness); `PostCropVignette*` (style 1/2/3 → highlight / color / paint).
+- Detail: sharpening and noise reduction.
+- Lens: `LensProfileEnable` → `auto`, `AutoLateralCA`, manual distortion and vignetting, defringe (amounts × 5: Lightroom's run 0–20).
+- Geometry: the `Perspective*` sliders, and `PerspectiveUpright` (0–4 as documented by ExifTool; Guided is reported).
+
+**Converted rather than copied:**
+- **White balance:** Kelvin presets keep Kelvin in `settings` and get the relative equivalent in `nonRaw` (`tempTintToRelative`); JPEG presets (`IncrementalTemperature/Tint`) work the other way round. Named settings (Daylight …) use `WB_PRESETS`, which has Lightroom's values. *As Shot* is left alone. *Auto* is reported, because Optic computes Auto on the photo.
+- **Tone curve:** `ToneCurvePV2012[Red|Green|Blue]` points ÷ 255. An untouched curve (all linear, parametric sliders at 0) is left out, so it never resets the photo's own curve. The parametric curve (`Parametric*` and its splits) is approximated: each region's centre moves by up to half the region's width. It is baked into 17 monotone points and applied before the point curve.
+- **Colour grading:** `ColorGrade*` and pre-2020 `SplitToning*` (Blending 100 when only split toning is present). Hues go from Lightroom's HSV-style wheel to OKLCH through the saturated sRGB colour of that hue (`adobeHueToOklch`). Balance has the same sign.
+- **Process version 2010 and older:** `Exposure`, `Clarity` and `ToneCurve` are used; Brightness / Fill Light / Recovery are reported.
+
+**Not converted (reported):** camera profiles (`Look`, `CameraProfile`, `RGBTable`), masks, spot
+removal / red eye, crop, point colour, HDR settings, lens blur, Auto tone, Guided Upright.
+
+**Storage:** converted presets are normal user presets.
+- **Id:** `lr-<hash of crs:UUID>` (or of name + settings when there is no UUID), so re-importing a preset replaces it, and the same preset in two formats within one import is skipped as a duplicate.
+- **Group:** the preset's `crs:Group`, else the nearest meaningful folder in the zip (generic folders like `XMP`, `LRTEMPLATE` or `DNG` are skipped), else *Lightroom imports*.
+- **Tag and description:** the tag is `lightroom`; the description names the file and what was not converted.
+
+**Limits** (`lightroom/limits.ts`, enforced through `readZip`'s limits before or while inflating):
+- 2 MB per `.xmp` / `.lrtemplate` and 200 MB per DNG; an entry over its limit is reported and never inflated.
+- Zips: up to 300 MB packed and 300 MB unpacked (decompression stops at the budget even if an entry lies about its size), and up to 1,000 entries (checked from the directory before reading).
+- macOS `__MACOSX/` and `._*` entries are skipped, and zips inside zips are reported.
+- If browser storage refuses a preset (full), the report marks it *Not saved*; it stays usable until a reload.
+
+Results are approximate by design: Optic's tone, curve and grading models are its own. Applying a
+converted preset goes through the normal engine, including the non-RAW scaling and the Amount slider.
 
 ## Built-in presets
 

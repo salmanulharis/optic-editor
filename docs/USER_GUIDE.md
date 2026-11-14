@@ -106,6 +106,18 @@ right and the filmstrip at the bottom. In the filmstrip, ← / → moves to the 
   step or another virtual copy. Hold **\\** to see the original.
 - **Presets**: hover to preview, click to apply, then use the **Amount** slider (0–200 %) to
   strengthen or soften the preset. On non-RAW photos presets apply a little more gently.
+- **Lightroom presets**: click **Import** in the preset browser (or drop files on it) and pick your
+  Lightroom or Camera Raw presets: `.xmp`, older `.lrtemplate` files, Lightroom Mobile DNG presets,
+  or the `.zip` a preset pack came in. Each becomes one of your presets, in its own group.
+  - Optic converts each setting to its own matching control, so a look comes out close to the
+    original rather than identical. Use **Amount** to fine-tune it.
+  - Some things can't come across: camera profiles, masks, spot removal, crop and point colour.
+    The status line tells you when that happened; **Details** lists each file, and the preset's
+    tooltip keeps the note.
+  - Importing the same preset again updates it rather than adding a copy. A pack that ships the
+    same preset as both `.xmp` and `.lrtemplate` gives you one preset.
+  - Profiles (files that only hold a camera profile) and export or metadata templates are not
+    develop presets, so they are reported and skipped.
 - **Panels**:
 
   | Panel | Contents |
@@ -258,7 +270,8 @@ On a phone, and on an iPad in a narrow window, Optic uses a touch layout:
 
   A small vibration marks the default value, where the device supports it.
 - **Presets**: a strip of thumbnails rendered on your photo. Tap a preset to apply it; tap it again
-  for its amount slider.
+  for its amount slider. The **＋ Import** tile at the end of the strip imports presets, including
+  Lightroom `.xmp` files and Lightroom Mobile DNG presets.
 - **Gestures** on the photo:
 
   | Gesture | Effect |

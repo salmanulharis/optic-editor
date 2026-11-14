@@ -56,12 +56,47 @@ export function writeZip(entries: ZipEntry[]): Uint8Array {
   return out;
 }
 
-async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+/** Thrown when a zip exceeds the limits passed to `readZip` (nothing past the limit is inflated). */
+export class ZipLimitError extends Error {
+  constructor(readonly kind: 'entries' | 'size') {
+    super(kind === 'entries' ? 'Too many files in the zip' : 'The zip unpacks to too much data');
+    this.name = 'ZipLimitError';
+  }
 }
 
-export async function readZip(bytes: Uint8Array): Promise<ZipEntry[]> {
+export interface ReadZipLimits {
+  /** Maximum number of directory entries (checked before anything is read). */
+  maxEntries?: number;
+  /** Maximum total uncompressed bytes of the entries read (enforced while inflating). */
+  maxTotalBytes?: number;
+  /** Return false to skip an entry without reading or inflating it (`size` as declared). */
+  include?(name: string, size: number): boolean;
+}
+
+/** Inflate, stopping as soon as more than `budget` bytes come out (a lying size field can't bypass it). */
+async function inflateRaw(data: Uint8Array, budget = Infinity): Promise<Uint8Array> {
+  const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  if (budget === Infinity) return new Uint8Array(await new Response(stream).arrayBuffer());
+  const reader = stream.getReader();
+  const parts: Uint8Array[] = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    n += value.length;
+    if (n > budget) {
+      await reader.cancel();
+      throw new ZipLimitError('size');
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const part of parts) { out.set(part, o); o += part.length; }
+  return out;
+}
+
+export async function readZip(bytes: Uint8Array, limits: ReadZipLimits = {}): Promise<ZipEntry[]> {
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let eocd = -1;
   for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
@@ -69,24 +104,33 @@ export async function readZip(bytes: Uint8Array): Promise<ZipEntry[]> {
   }
   if (eocd < 0) throw new Error('Not a zip archive');
   const count = dv.getUint16(eocd + 10, true);
+  if (limits.maxEntries !== undefined && count > limits.maxEntries) throw new ZipLimitError('entries');
   let p = dv.getUint32(eocd + 16, true);
   const dec = new TextDecoder();
   const out: ZipEntry[] = [];
+  let left = limits.maxTotalBytes ?? Infinity;
   for (let i = 0; i < count; i++) {
     if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Corrupt zip directory');
     const method = dv.getUint16(p + 10, true);
     const csize = dv.getUint32(p + 20, true);
+    const usize = dv.getUint32(p + 24, true);
     const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
     const lho = dv.getUint32(p + 42, true);
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
     p += 46 + nlen + xlen + clen;
     if (name.endsWith('/')) continue;
+    if (limits.include && !limits.include(name, usize)) continue;
     const lnl = dv.getUint16(lho + 26, true), lxl = dv.getUint16(lho + 28, true);
     const start = lho + 30 + lnl + lxl;
     const raw = bytes.subarray(start, start + csize);
-    if (method === 0) out.push({ name, data: raw.slice() });
-    else if (method === 8) out.push({ name, data: await inflateRaw(raw) });
+    let data: Uint8Array;
+    if (method === 0) {
+      if (raw.length > left) throw new ZipLimitError('size');
+      data = raw.slice();
+    } else if (method === 8) data = await inflateRaw(raw, left);
     else throw new Error(`Unsupported zip compression (${method}) for ${name}`);
+    left -= data.length;
+    out.push({ name, data });
   }
   return out;
 }

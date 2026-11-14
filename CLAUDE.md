@@ -23,7 +23,7 @@ npm run dev            # http://localhost:5173 (sends the COOP/COEP headers)
 npm run build          # tsc -b && vite build
 npm run preview        # serve dist/ on :4173 (also sends COOP/COEP)
 npm run typecheck      # tsc -b --noEmit
-npm test               # Vitest unit tests (tests/unit: migrations, colour maths, gamut, export dims, zip)
+npm test               # Vitest unit tests (tests/unit: migrations, colour maths, gamut, export dims, zip, Lightroom presets)
 npm run test:e2e       # Playwright (tests/e2e) in real Chrome/Edge with GPU; CHROME_CHANNEL=msedge for Edge
 npm run test:seams     # tiled vs untiled export, every spatial effect and mask kind at 100; exits 1 on a seam
 npm run bench          # 48 MP synthetic: preview fps while dragging (incl. 16 masks), export time
@@ -208,6 +208,10 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - Themes use CSS-variable tokens (`index.css`, `tailwind.config.js`): use `bg-panel`, `text-ink`, `bg-hover`, …, not hex.
   - i18n lives in `src/i18n/` (English).
   - The shortcut list is `app/shortcuts.ts`; keep it in step with `keyboard.ts`.
+  - Modal dialogs use `useFocusTrap` (`ui/focusTrap.ts`) and `aria-modal="true"`; the shared `Modal` (`ui/presets/Dialogs.tsx`) already does both. The hook reads the opener during render, because `autoFocus` runs before effects.
+  - Rarely opened UI is lazy-loaded in `App.tsx` (`LazyDialogs`: export, settings, shortcuts, tour), and each dialog mounts only while open. Keep always-visible pieces out of those modules: the export progress pill lives in `ExportProgress.tsx` for this reason.
+  - exifr is loaded on demand (`decodeClient`, `exportClient`, `InfoPanel`). Main-thread code must not import `library/fileInfo.ts`; the preview sizes live in `library/previewSizes.ts`.
+  - `vite.config.ts` `manualChunks` splits out `react`, `dexie` and `presets-builtin`. The main chunk is about 470 kB; keep it under Vite's 500 kB warning.
 
 ### Presets (`src/presets/`, `src/state/presetStore.ts`)
 - Built-ins are JSON files in `src/presets/builtin/<category>/` (`bw`, `cinematic`, `film`, `hasselblad`, `leica`, `zeiss`; browser categories ordered by `BUILTIN_GROUP_ORDER`, not the recipe `PRESET_GROUPS`), format version 3 (version 2 files load unchanged), loaded with `import.meta.glob` in `builtin/index.ts`. They are the source of truth: edit them directly. Adding a file ships a new built-in. User presets and imported LUTs live in IndexedDB (`src/storage/db.ts`), and `.opticpack` is a plain zip (`src/storage/zip.ts`).
@@ -218,6 +222,10 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
 - Non-RAW photos get `NON_RAW_SCALE = 0.75` applied to saturation, contrast and calibration changes, then the preset's optional `nonRaw` overrides.
 - Hover preview sets `uiStore.previewRecipe` (never committed). `ui/canvas/displayed.ts` decides what the canvas shows: before, preview, edit, crop-tool frame, compare Before, or a mask view.
 - LUT data lives in `lutRegistry` (DOM-free), keyed by the id the recipe stores. The export worker receives the LUTs it needs with the job.
+- **Lightroom presets** (`src/presets/lightroom/`, lazy-loaded by `presetStore.importFiles`): `.xmp`, `.lrtemplate` and DNG presets (alone or in a zip) → ordinary v3 user presets with id `lr-<hash of crs:UUID>`, so re-imports replace them.
+  - The pure converter `convertCrs` maps `crs:` fields onto preset groups. Snapshots (sidecars, DNGs) drop neutral and photo-specific groups. Hues go to OKLCH (`adobeHueToOklch`), and Kelvin WB goes to `settings` with the relative value in `nonRaw`.
+  - What can't be converted comes back as `NotConverted` codes, translated by `lr.skip.*` in `i18n/en.ts`. The UI shows them through `ui/presets/ImportReport.tsx` (status line + report dialog, shared by the desktop browser and the touch `PresetStrip`).
+  - Mapping and limits: docs/PRESETS.md. A drop on the preset browser calls `preventDefault`, so the app-wide drop handler in `App.tsx` doesn't import it as photos.
 
 ## Adding a pipeline stage
 

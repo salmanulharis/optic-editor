@@ -1,10 +1,11 @@
 /** Import dialog: choose photos, storage mode, duplicates, preset, collection and keywords. */
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { type ImportOptions, startImport, closeImportDialog, useImport } from '../../library/importer';
 import { opfsAvailable } from '../../library/opfs';
 import { openPhoto } from '../../library/open';
 import { useLibrary } from '../../state/libraryStore';
 import { usePresets } from '../../state/presetStore';
+import { useFocusTrap } from '../focusTrap';
 
 export function ImportDialog() {
   const open = useImport((s) => s.dialogOpen);
@@ -17,6 +18,8 @@ export function ImportDialog() {
   const collections = allCollections.filter((c) => c.kind === 'manual');
   const presets = usePresets((s) => s.ready);
   const allPresets = useMemo(() => (presets ? usePresets.getState().all() : []), [presets]);
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, open);
   if (!open) return null;
   const set = (p: Partial<ImportOptions>) => useImport.getState().set({ options: { ...useImport.getState().options, ...p } });
   const setSel = (fn: (id: string, dup: boolean) => boolean) =>
@@ -26,7 +29,7 @@ export function ImportDialog() {
   const checking = cands.some((c) => c.hash === undefined);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onPointerDown={(e) => e.target === e.currentTarget && closeImportDialog()}>
-      <div role="dialog" aria-modal="true" aria-labelledby="import-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-lg border border-line bg-panel text-ink shadow-2xl"
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="import-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-lg border border-line bg-panel text-ink shadow-2xl"
         onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') closeImportDialog(); }}>
         <div className="flex items-center gap-3 border-b border-line px-4 py-3">
           <h2 id="import-title" className="text-sm font-medium">Import {cands.length} photo{cands.length === 1 ? '' : 's'}</h2>

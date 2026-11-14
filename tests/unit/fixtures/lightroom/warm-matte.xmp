@@ -1,0 +1,48 @@
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+   crs:PresetType="Normal"
+   crs:UUID="0A6F3D2C9B8E4F1A8C7D6E5F4A3B2C1D"
+   crs:Version="12.0"
+   crs:ProcessVersion="11.0"
+   crs:WhiteBalance="Custom"
+   crs:Temperature="5000"
+   crs:Tint="+12"
+   crs:Contrast2012="-20"
+   crs:Highlights2012="-30"
+   crs:Shadows2012="+30"
+   crs:Whites2012="0"
+   crs:Blacks2012="+20"
+   crs:Vibrance="+10"
+   crs:Saturation="-10"
+   crs:ParametricShadows="+30"
+   crs:ParametricDarks="+10"
+   crs:ParametricLights="0"
+   crs:ParametricHighlights="-20"
+   crs:ParametricShadowSplit="25"
+   crs:ParametricMidtoneSplit="50"
+   crs:ParametricHighlightSplit="75"
+   crs:Sharpness="40"
+   crs:SharpenRadius="+1.0"
+   crs:SharpenDetail="25"
+   crs:SharpenEdgeMasking="0"
+   crs:GrainAmount="15"
+   crs:GrainSize="25"
+   crs:GrainFrequency="50">
+   <crs:Name>
+    <rdf:Alt>
+     <rdf:li xml:lang="x-default">Warm Matte</rdf:li>
+    </rdf:Alt>
+   </crs:Name>
+   <crs:ToneCurvePV2012>
+    <rdf:Seq>
+     <rdf:li>0, 0</rdf:li>
+     <rdf:li>255, 255</rdf:li>
+    </rdf:Seq>
+   </crs:ToneCurvePV2012>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>

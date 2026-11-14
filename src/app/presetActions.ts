@@ -20,6 +20,7 @@ import { defaultRecipeFor, useImage } from '../state/imageStore';
 import { usePresets } from '../state/presetStore';
 import { useUi } from '../state/uiStore';
 import { targetIds } from '../state/libraryStore';
+import { pasteToSelection } from '../library/batch';
 import { getRenderer } from './actions';
 
 const isRaw = () => !!useImage.getState().image?.isRaw;
@@ -103,7 +104,7 @@ export function pasteSettings(groups: PresetGroup[]) {
   // Several photos selected in the filmstrip: paste to all of them (one history step each).
   const ids = targetIds();
   if (ids.length > 1) {
-    void import('../library/batch').then((b) => b.pasteToSelection(groups, clip, clip.isRaw ?? isRaw(), ids));
+    void pasteToSelection(groups, clip, clip.isRaw ?? isRaw(), ids);
     return;
   }
   useEdit.getState().apply((r) => {

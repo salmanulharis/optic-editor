@@ -7,7 +7,9 @@ import { applyPresetToEdit, commitAmount, removeAppliedPreset, setAmountLive } f
 import type { Preset } from '../../presets/types';
 import { useEdit } from '../../state/editStore';
 import { usePresets } from '../../state/presetStore';
+import { useT } from '../../i18n';
 import { Slider } from '../controls/Slider';
+import { ImportReportDialog, ImportStatus, usePresetImport } from '../presets/ImportReport';
 import { useThumbnail } from '../presets/thumbnails';
 
 function Tile({ p, applied, onTap }: { p: Preset; applied: boolean; onTap(): void }) {
@@ -33,6 +35,10 @@ export function PresetStrip() {
   const groups = useMemo(() => ['Favorites', ...new Set(all.map((p) => p.group))], [all]);
   const [group, setGroup] = useState<string>(() => (favorites.length ? 'Favorites' : all[0]?.group ?? ''));
   const [showAmount, setShowAmount] = useState(false);
+  const t = useT();
+  const fileRef = useRef<HTMLInputElement>(null);
+  // After an import, show the group the new presets landed in.
+  const imp = usePresetImport((g) => { if (g) setGroup(g); });
   const list = group === 'Favorites' ? all.filter((p) => favorites.includes(p.id)) : all.filter((p) => p.group === group);
   return (
     <div className="px-3">
@@ -50,7 +56,17 @@ export function PresetStrip() {
           }} />
         ))}
         {!list.length && <div className="py-6 text-xs text-ink-faint">{group === 'Favorites' ? 'Star presets in the desktop browser or with a long press to see them here.' : 'No presets'}</div>}
+        <button onClick={() => fileRef.current?.click()} disabled={imp.busy} aria-label={t('presets.import.aria')}
+          className="flex w-[88px] shrink-0 flex-col overflow-hidden rounded border border-dashed border-line disabled:opacity-40">
+          <div className="flex aspect-[4/5] w-full items-center justify-center text-2xl text-ink-dim" aria-hidden>＋</div>
+          <div className="truncate px-1 py-1 text-[10px] text-ink-dim">{t('presets.import')}</div>
+        </button>
+        {/* No `accept` filter: iOS greys out extensions it has no type for (.xmp, .lrtemplate). */}
+        <input ref={fileRef} type="file" multiple className="hidden" tabIndex={-1} aria-hidden
+          onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void imp.run(f); e.target.value = ''; }} />
       </div>
+      <ImportStatus imp={imp} className="mb-2 rounded border border-line px-2 py-1.5 text-[11px] text-ink-dim" />
+      <ImportReportDialog imp={imp} />
       {applied && (
         <div className="mt-1 rounded border border-line p-2">
           <div className="mb-1 flex items-center gap-2 text-xs">

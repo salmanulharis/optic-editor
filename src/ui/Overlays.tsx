@@ -1,29 +1,10 @@
 /** App-level overlays: the keyboard shortcuts list (?) and the first-launch tour. */
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { SHORTCUTS } from '../app/shortcuts';
 import { useT } from '../i18n';
 import { useSettings } from '../state/settingsStore';
 import { useUi } from '../state/uiStore';
-
-/** Keep keyboard focus inside a dialog while it is open; restore it afterwards. */
-export function useFocusTrap(ref: React.RefObject<HTMLElement | null>, open: boolean) {
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.activeElement as HTMLElement | null;
-    const el = ref.current;
-    el?.querySelector<HTMLElement>('input,button,select,[tabindex]:not([tabindex="-1"])')?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || !el) return;
-      const f = [...el.querySelectorAll<HTMLElement>('input,button,select,textarea,a[href],[tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute('disabled'));
-      if (!f.length) return;
-      const first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => { window.removeEventListener('keydown', onKey, true); prev?.focus?.(); };
-  }, [open, ref]);
-}
+import { useFocusTrap } from './focusTrap';
 
 export function ShortcutsOverlay() {
   const open = useUi((s) => s.shortcutsOpen);

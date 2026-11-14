@@ -17,7 +17,7 @@ import { type DetailDefaults, type PreviewQuality, type Theme, useSettings } fro
 import { useLibrary } from '../state/libraryStore';
 import { useUi } from '../state/uiStore';
 import { dbGetAll, dbDelete } from '../storage/db';
-import { useFocusTrap } from './Overlays';
+import { useFocusTrap } from './focusTrap';
 
 const fmt = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.round(n / 1e3)} KB`);
 

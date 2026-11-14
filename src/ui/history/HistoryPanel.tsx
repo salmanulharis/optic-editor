@@ -6,11 +6,12 @@
  *    there truncates the steps after it), hover to preview, ⇆ to compare against it.
  * Both are saved per photo (and per virtual copy) and survive reloads.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { effectiveRecipe } from '../../recipe/schema';
 import { activeCopy, dateName, useEdit } from '../../state/editStore';
 import { useImage } from '../../state/imageStore';
 import { useUi } from '../../state/uiStore';
+import { useFocusTrap } from '../focusTrap';
 
 const preview = (r: Parameters<typeof effectiveRecipe>[0] | null) => useUi.getState().set({ previewRecipe: r });
 const compareWith = (source: string) => {
@@ -84,12 +85,14 @@ export function HistoryPanel() {
 export function SnapshotDialog() {
   const open = useUi((s) => s.snapshotDialog);
   const [name, setName] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, open);
   if (!open) return null;
   const close = () => { useUi.getState().set({ snapshotDialog: false }); setName(''); };
   const save = () => { useEdit.getState().createSnapshot(name || dateName()); close(); };
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div role="dialog" aria-label="Create snapshot" className="w-full max-w-sm rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
+      <div ref={ref} role="dialog" aria-modal="true" aria-label="Create snapshot" className="w-full max-w-sm rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
         onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') close(); if (e.key === 'Enter') save(); }}>
         <h2 className="mb-3 text-sm font-medium">Create snapshot</h2>
         <input autoFocus className="input w-full" placeholder={dateName()} value={name} onChange={(e) => setName(e.target.value)} />

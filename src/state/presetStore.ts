@@ -3,13 +3,16 @@
  * (localStorage), and imported LUTs (IndexedDB → lutRegistry).
  */
 import { create } from 'zustand';
+import { t } from '../i18n';
 import { type LutData, LutError, parseCube, parseLutFile, toCube } from '../io/lut/lut';
 import { lutRegistry } from '../pipeline/lutRegistry';
 import { BUILTIN_PRESETS, BUNDLED_LUTS } from '../presets/builtin';
+import type { LightroomErrorCode, NotConverted } from '../presets/lightroom';
 import type { Preset } from '../presets/types';
-import { PRESET_GROUPS, type PresetGroup } from '../recipe/schema';
+import { GROUP_LABELS, PRESET_GROUPS, type PresetGroup } from '../recipe/schema';
 import { dbDelete, dbGetAll, dbPut, lsGet, lsSet } from '../storage/db';
-import { readZip, writeZip } from '../storage/zip';
+import { ZipLimitError, readZip, writeZip } from '../storage/zip';
+import { lightroomLimit } from '../presets/lightroom/limits';
 
 interface PresetState {
   ready: boolean;
@@ -22,7 +25,8 @@ interface PresetState {
   byId(id: string): Preset | undefined;
   toggleFavorite(id: string): void;
   pushRecent(id: string): void;
-  saveUser(p: Preset): Promise<void>;
+  /** Saves to IndexedDB and the in-memory list; resolves false if storage refused it (e.g. full). */
+  saveUser(p: Preset): Promise<boolean>;
   deleteUser(id: string): Promise<void>;
 }
 
@@ -69,8 +73,9 @@ export const usePresets = create<PresetState>((set, get) => ({
   },
   async saveUser(p) {
     const clean = { ...p, builtin: undefined };
-    await dbPut('presets', clean).catch((e) => console.warn('[optic] preset not persisted', e));
+    const persisted = await dbPut('presets', clean).then(() => true, (e) => { console.warn('[optic] preset not persisted', e); return false; });
     set({ user: [...get().user.filter((x) => x.id !== p.id), { ...p, builtin: false }] });
+    return persisted;
   },
   async deleteUser(id) {
     await dbDelete('presets', id).catch(() => {});
@@ -124,17 +129,156 @@ export async function deleteLut(id: string) {
   await dbDelete('luts', id).catch(() => {});
 }
 
-/** Import .json presets, .opticpack bundles, .cube / Hald .png LUTs. Returns a summary. */
-export async function importFiles(files: File[]): Promise<{ presets: number; luts: number; errors: string[] }> {
-  const res = { presets: 0, luts: 0, errors: [] as string[] };
+/** One Lightroom file in an import: what became of it (shown in the import report). */
+export interface LightroomReportRow {
+  file: string;
+  status: 'converted' | 'partial' | 'failed' | 'duplicate';
+  /** The preset's name, when it was converted. */
+  name?: string;
+  /** The group the converted preset was saved in. */
+  group?: string;
+  /** True when it replaced a preset imported earlier (same Lightroom preset). */
+  updated?: boolean;
+  /** True when browser storage refused it: usable until the page is reloaded. */
+  notSaved?: boolean;
+  notConverted?: NotConverted[];
+  legacy?: boolean;
+  error?: LightroomErrorCode;
+}
+
+export interface ImportSummary {
+  presets: number;
+  luts: number;
+  /** Presets that came from Lightroom files (included in `presets`). */
+  lightroom: number;
+  errors: string[];
+  report: LightroomReportRow[];
+}
+
+/** Zips larger than this, packed or unpacked, are not preset packs (DNG preset packs included). */
+const MAX_ZIP_BYTES = 300 * 1024 * 1024;
+const MAX_ZIP_UNPACKED = 300 * 1024 * 1024;
+const MAX_ZIP_ENTRIES = 1000;
+/** Lightroom files (the converter itself is loaded on first use). */
+const LIGHTROOM_EXT = /\.(xmp|lrtemplate|dng)$/i;
+/** Yield to the event loop every few files so a large pack never blocks the UI. */
+const YIELD_EVERY = 20;
+
+/** Folder names in preset packs that say nothing about the look ("Pack/XMP/Moody.xmp"). */
+const GENERIC_FOLDER = /^(xmp|lrtemplates?|dngs?|presets?|lightroom( classic| cc| mobile)?( presets?)?|lr( presets?)?|desktop|mobile|camera ?raw|acr|files?)$/i;
+
+/** The group for a preset found in a zip: its nearest meaningful folder, else the zip's name. */
+function zipGroup(entryPath: string, zipName: string): string {
+  const folders = entryPath.split('/').slice(0, -1).filter((f) => f && f !== '__MACOSX');
+  for (let i = folders.length - 1; i >= 0; i--) if (!GENERIC_FOLDER.test(folders[i].trim())) return folders[i].trim();
+  const base = zipName.replace(/\.[^.]+$/, '').trim();
+  return GENERIC_FOLDER.test(base) ? '' : base;
+}
+
+/** macOS resource forks and Finder metadata that ride along in zips. */
+const isJunk = (path: string) => /(^|\/)(__MACOSX\/|\._)/.test(path) || /(^|\/)\.DS_Store$/.test(path);
+
+/**
+ * Import .json presets, .opticpack bundles, .cube / Hald .png LUTs, and Lightroom / Camera Raw
+ * presets (.xmp, .lrtemplate, DNG presets), on their own or in a .zip. Returns a summary.
+ */
+export async function importFiles(
+  files: File[],
+  opts: { onProgress?(done: number, total: number): void } = {},
+): Promise<ImportSummary> {
+  const res: ImportSummary = { presets: 0, luts: 0, lightroom: 0, errors: [], report: [] };
   const store = usePresets.getState();
+  let total = files.length;
+  let done = 0;
+  const seenLr = new Set<string>();
+  const tick = async () => {
+    done++;
+    opts.onProgress?.(done, total);
+    if (done % YIELD_EVERY === 0) await new Promise((r) => setTimeout(r, 0));
+  };
+
+  /** Convert and save one Lightroom file; never throws (failures become report rows). */
+  const importLightroom = async (path: string, read: () => Promise<Uint8Array>, size: number, group?: string) => {
+    const lr = await import('../presets/lightroom');
+    const file = path.replace(/^.*\//, '');
+    try {
+      if (size > lightroomLimit(path)) throw new lr.LightroomImportError('tooLarge');
+      const r = lr.importLightroomFile(path, await read(), { group });
+      if (seenLr.has(r.preset.id)) {
+        // The same preset in another format in the same pack (.xmp next to .lrtemplate).
+        res.report.push({ file, status: 'duplicate', name: r.preset.name });
+        return;
+      }
+      seenLr.add(r.preset.id);
+      const p = validatePreset(r.preset, true);
+      p.description = lightroomDescription(file, r.notConverted, r.legacyProcess);
+      const updated = usePresets.getState().user.some((u) => u.id === p.id);
+      const saved = await store.saveUser(p);
+      res.presets++;
+      res.lightroom++;
+      res.report.push({
+        file,
+        status: r.notConverted.length || r.legacyProcess ? 'partial' : 'converted',
+        name: p.name,
+        group: p.group,
+        updated,
+        ...(saved ? {} : { notSaved: true }),
+        notConverted: r.notConverted,
+        legacy: r.legacyProcess,
+      });
+    } catch (e) {
+      if (e instanceof lr.LightroomImportError) {
+        res.report.push({ file, status: 'failed', error: e.code, notConverted: e.notConverted });
+      } else {
+        res.report.push({ file, status: 'failed', error: 'unreadable' });
+      }
+    }
+  };
+
   for (const f of files) {
     try {
       if (/\.json$/i.test(f.name)) {
         await store.saveUser(validatePreset(JSON.parse(await f.text())));
         res.presets++;
+      } else if (LIGHTROOM_EXT.test(f.name)) {
+        await importLightroom(f.name, async () => new Uint8Array(await f.arrayBuffer()), f.size);
       } else if (/\.opticpack$|\.zip$/i.test(f.name)) {
-        const entries = await readZip(new Uint8Array(await f.arrayBuffer()));
+        if (f.size > MAX_ZIP_BYTES) throw new Error(t('presets.import.zipTooLarge'));
+        // Limits are checked from the zip directory before anything is inflated; entries that are
+        // not presets (or too large to be one) are never inflated at all.
+        const nested: string[] = [];
+        const oversized: string[] = [];
+        let entries;
+        try {
+          entries = await readZip(new Uint8Array(await f.arrayBuffer()), {
+            maxEntries: MAX_ZIP_ENTRIES,
+            maxTotalBytes: MAX_ZIP_UNPACKED,
+            include: (name, size) => {
+              if (isJunk(name)) return false;
+              if (/\.(zip|opticpack)$/i.test(name)) { nested.push(name); return false; }
+              if (LIGHTROOM_EXT.test(name)) {
+                if (size > lightroomLimit(name)) { oversized.push(name); return false; }
+                return true;
+              }
+              return /\.(json|cube)$/i.test(name);
+            },
+          });
+        } catch (e) {
+          if (e instanceof ZipLimitError) {
+            throw new Error(e.kind === 'entries' ? t('presets.import.zipTooMany', { max: MAX_ZIP_ENTRIES }) : t('presets.import.zipTooBig'));
+          }
+          throw e;
+        }
+        for (const name of oversized) res.report.push({ file: name.replace(/^.*\//, ''), status: 'failed', error: 'tooLarge' });
+        for (const name of nested) res.errors.push(`${name}: ${t('presets.import.nestedZip')}`);
+        const lrEntries = entries.filter((e) => LIGHTROOM_EXT.test(e.name));
+        total += lrEntries.length;
+        for (const e of lrEntries) {
+          await importLightroom(e.name, async () => e.data, e.data.length, zipGroup(e.name, f.name) || undefined);
+          await tick();
+        }
+        const known = entries.filter((x) => /\.(json|cube)$/i.test(x.name));
+        if (!known.length && !lrEntries.length && !oversized.length && !nested.length) throw new Error(t('presets.import.emptyZip'));
         const lutIdMap = new Map<string, string>();
         for (const e of entries.filter((x) => /\.cube$/i.test(x.name))) {
           const oldId = e.name.replace(/^.*\//, '').replace(/\.cube$/i, '');
@@ -155,12 +299,33 @@ export async function importFiles(files: File[]): Promise<{ presets: number; lut
       } else if (/\.cube$|\.png$/i.test(f.name)) {
         await importLut(f);
         res.luts++;
-      } else res.errors.push(`${f.name}: unsupported file type`);
+      } else res.errors.push(`${f.name}: ${t('presets.import.unsupported')}`);
     } catch (e) {
       res.errors.push(`${f.name}: ${e instanceof LutError || e instanceof Error ? e.message : String(e)}`);
     }
+    await tick();
   }
   return res;
+}
+
+/** The note stored in a converted preset's description (shown in its tooltip). */
+function lightroomDescription(file: string, notConverted: NotConverted[], legacy: boolean): string {
+  const parts = [t('lr.description', { file })];
+  if (legacy) parts.push(t('lr.error.legacy'));
+  if (notConverted.length) parts.push(t('lr.description.skipped', { list: notConvertedText(notConverted) }));
+  return parts.join(' ').slice(0, 500);
+}
+
+/** "camera profile (Adobe Portrait), 2 masks" — the translated list of what was not converted. */
+export function notConvertedText(items: NotConverted[]): string {
+  return items
+    .map((n) => {
+      const detail = n.code === 'photoSpecific' && n.detail
+        ? n.detail.split(', ').map((g) => GROUP_LABELS[g as PresetGroup] ?? g).join(', ')
+        : n.detail ?? '';
+      return t(`lr.skip.${n.code}`, { detail }).replace(/\s*\(\)$/, '');
+    })
+    .join(', ');
 }
 
 /** Build an .opticpack (zip of preset JSON files + the user LUTs they reference). */

@@ -3,7 +3,6 @@
  * Output: RGB float table of size N³ with red varying fastest (the .cube order), plus domain.
  * Parsers throw `LutError` with a user-readable message for anything malformed.
  */
-import { decode as decodePng } from '@jsquash/png/decode.js';
 
 export interface LutData {
   id: string;
@@ -67,6 +66,8 @@ export function parseCube(text: string, fallbackName: string): Omit<LutData, 'id
 export async function parseHald(bytes: Uint8Array, fallbackName: string): Promise<Omit<LutData, 'id' | 'source'>> {
   let img: { width: number; height: number; data: Uint16Array };
   try {
+    // The PNG decoder (WASM glue) is loaded only for Hald CLUT imports.
+    const { decode: decodePng } = await import('@jsquash/png/decode.js');
     img = await decodePng(bytes.slice().buffer as ArrayBuffer, { bitDepth: 16 });
   } catch {
     throw new LutError('Could not decode the PNG');

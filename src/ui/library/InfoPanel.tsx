@@ -2,7 +2,6 @@
  * Info panel for the focused photo: preview, rating / flag / label / keywords, file facts,
  * histogram (of the cached preview), what the edit changes, and the full EXIF of the original.
  */
-import exifr from 'exifr';
 import { useEffect, useState } from 'react';
 import { addKeywords, removeKeyword, setFlag, setRating, toggleLabel } from '../../library/actions';
 import { COLOR_LABELS, LABEL_CSS, type PhotoRecord } from '../../library/db';
@@ -57,7 +56,8 @@ function FullExif({ p }: { p: PhotoRecord }) {
     setRows(null);
     void (async () => {
       try {
-        const f = await photoFile(p);
+        // exifr is loaded only when the full EXIF list is opened.
+        const [f, { default: exifr }] = await Promise.all([photoFile(p), import('exifr')]);
         const all = (await exifr.parse(f, { tiff: true, exif: true, gps: true, ifd1: false, iptc: true, xmp: false, icc: false, makerNote: false, mergeOutput: true })) as Record<string, unknown> | undefined;
         const out = Object.entries(all ?? {})
           .filter(([, v]) => v !== undefined && v !== null && !(v instanceof Uint8Array))

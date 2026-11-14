@@ -24,7 +24,7 @@ import { useUi } from '../state/uiStore';
 import { dbGet } from '../storage/db';
 import type { PhotoRecord } from './db';
 import { decodePhoto } from './decode';
-import { PREVIEW_EDGE, THUMB_EDGE } from './fileInfo';
+import { PREVIEW_EDGE, THUMB_EDGE } from './previewSizes';
 import { readFile, writeFile } from './opfs';
 import type { RenderJob } from './renderCore';
 import type { RenderWorkerApi } from './render.worker';
