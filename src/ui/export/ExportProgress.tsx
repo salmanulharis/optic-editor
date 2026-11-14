@@ -1,9 +1,11 @@
+import { t as tr } from '../../i18n';
 /**
  * Export progress for the top bar (single-photo export, or the batch queue as a pill that reopens
  * its panel). Kept apart from ExportDialog.tsx so the dialogs can load only when opened.
  */
 import { create } from 'zustand';
 import { useExportQueue } from '../../library/exportQueue';
+import { IconButton } from '../controls/IconButton';
 
 export interface ExportJobState {
   running: boolean;
@@ -30,18 +32,17 @@ export function ExportProgress() {
   const panelOpen = useExportQueue((s) => s.panelOpen);
   if (q && !panelOpen && (q.status === 'running' || q.status === 'paused' || q.status === 'interrupted')) {
     const done = q.items.filter((i) => i.state === 'done').length;
-    return <button className="rounded bg-hover px-2 py-1 text-[11px] text-ink" onClick={() => useExportQueue.getState().set({ panelOpen: true })}>Export {done}/{q.items.length}{q.status !== 'running' ? ` (${q.status})` : ''}</button>;
+    return <button className="rounded bg-hover px-2 py-1 text-2xs text-ink" onClick={() => useExportQueue.getState().set({ panelOpen: true })}>{tr('exportProgress.export_done_n', { done: done, n: q.items.length })}{q.status !== 'running' ? ` (${q.status})` : ''}</button>;
   }
   if (!job.running && !job.label && !job.error) return null;
   if (job.error && !job.running) {
     return (
-      <button className="rounded bg-[#4a2626] px-2 py-1 text-[11px] text-[#f0b0b0]" onClick={() => useExportJob.getState().set({ error: null })}>
-        Export failed — {job.error.slice(0, 60)} ✕
+      <button className="rounded bg-danger-bg px-2 py-1 text-2xs text-ink" onClick={() => useExportJob.getState().set({ error: null })}>{tr('exportProgress.export_failed', { error: job.error.slice(0, 60) })} ✕
       </button>
     );
   }
   return (
-    <div className="flex items-center gap-2 text-[11px] text-ink-dim" role="status" aria-live="polite">
+    <div className="flex items-center gap-2 text-2xs text-ink-dim" role="status" aria-live="polite">
       {job.running && (
         <div className="h-1.5 w-24 overflow-hidden rounded bg-hover">
           <div className="h-full bg-meter transition-[width]" style={{ width: `${Math.round(job.fraction * 100)}%` }} />
@@ -49,7 +50,7 @@ export function ExportProgress() {
       )}
       <span>{job.label}</span>
       {job.running && (
-        <button className="text-ink-faint hover:text-ink" onClick={() => job.controller?.abort()} title="Cancel export" aria-label="Cancel export">✕</button>
+        <IconButton className="text-ink-faint hover:text-ink" onClick={() => job.controller?.abort()} label={tr('exportProgress.cancel_export')}>✕</IconButton>
       )}
     </div>
   );

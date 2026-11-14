@@ -321,7 +321,7 @@ export function notConvertedText(items: NotConverted[]): string {
   return items
     .map((n) => {
       const detail = n.code === 'photoSpecific' && n.detail
-        ? n.detail.split(', ').map((g) => GROUP_LABELS[g as PresetGroup] ?? g).join(', ')
+        ? n.detail.split(', ').map((g) => (GROUP_LABELS[g as PresetGroup] ? t(`groups.${g}`) : g)).join(', ')
         : n.detail ?? '';
       return t(`lr.skip.${n.code}`, { detail }).replace(/\s*\(\)$/, '');
     })

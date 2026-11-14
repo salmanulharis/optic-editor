@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 import { defaultRecipe } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
 import { Section } from '../controls/Section';
@@ -13,16 +14,16 @@ export function LookPanel() {
   );
   return (
     <Section
-      title="Look"
+      title={tr('lookPanel.look')}
       enabled={k.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('look', on)}
       onReset={() => s.apply({ ...defaultRecipe().look, enabled: k.enabled })}
     >
-      {slider('highlightRolloff', 'Highlight roll-off')}
-      {slider('shadowDensity', 'Shadow density')}
-      {slider('microContrast', 'Micro-contrast')}
-      {slider('colorDensity', 'Color density')}
-      <Slider label="Warmth bias" value={k.warmthBias} min={-100} max={100} step={1} defaultValue={0}
+      {slider('highlightRolloff', tr('lookPanel.highlight_roll_off'))}
+      {slider('shadowDensity', tr('lookPanel.shadow_density'))}
+      {slider('microContrast', tr('lookPanel.micro_contrast'))}
+      {slider('colorDensity', tr('lookPanel.color_density'))}
+      <Slider label={tr('lookPanel.warmth_bias')} value={k.warmthBias} min={-100} max={100} step={1} defaultValue={0}
         track={grad('#6c8fd0', '#9a9a9a', '#d6b25a')}
         onChange={(v) => s.set({ warmthBias: v })} onCommit={s.commit} />
     </Section>

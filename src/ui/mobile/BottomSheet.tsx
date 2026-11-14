@@ -1,10 +1,15 @@
+import { t as tr } from '../../i18n';
 /**
  * Bottom sheet: half height (the photo stays visible above it) or full height. Drag the handle up
  * for full height, down to go back to half height or to dismiss; Escape closes it.
  */
 import { type ReactNode, useRef, useState } from 'react';
 
-export function BottomSheet({ title, open, onClose, children, actions }: { title: string; open: boolean; onClose(): void; children: ReactNode; actions?: ReactNode }) {
+/**
+ * `compactHeader`: the content starts with its own heading (a panel section of the same name), so
+ * the title is announced but not shown, and the controls share the drag-handle row.
+ */
+export function BottomSheet({ title, open, onClose, children, actions, compactHeader = false }: { title: string; open: boolean; onClose(): void; children: ReactNode; actions?: ReactNode; compactHeader?: boolean }) {
   const [full, setFull] = useState(false);
   const [drag, setDrag] = useState(0);
   const start = useRef<{ y: number; id: number } | null>(null);
@@ -32,17 +37,25 @@ export function BottomSheet({ title, open, onClose, children, actions }: { title
       onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
     >
       <div className="flex cursor-grab touch-none items-center gap-2 px-3 pb-1 pt-1.5" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-        <div className="flex-1" />
-        <div className="h-1 w-10 rounded-full bg-[#555]" aria-hidden />
-        <div className="flex flex-1 justify-end" />
+        <div className="flex-1">{compactHeader && <h2 className="sr-only">{title}</h2>}</div>
+        <div className="h-1 w-10 rounded-full bg-edge" aria-hidden />
+        <div className="flex flex-1 items-center justify-end" onPointerDown={(e) => e.stopPropagation()}>
+          {compactHeader && (<>
+          {actions}
+          <button className="hit rounded px-2 text-xs text-ink-dim" onClick={() => setFull(!full)} aria-label={full ? tr('bottomSheet.half_height') : tr('bottomSheet.full_height')}>{full ? '▾' : '▴'}</button>
+          <button className="hit rounded px-2 text-xs text-ink-dim" onClick={onClose} aria-label={tr('bottomSheet.close_panel')}>✕</button>
+          </>)}
+        </div>
       </div>
-      <div className="flex items-center gap-2 px-3 pb-1">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-ink">{title}</h2>
-        <div className="flex-1" />
-        {actions}
-        <button className="rounded px-2 py-1 text-xs text-ink-dim" onClick={() => setFull(!full)} aria-label={full ? 'Half height' : 'Full height'}>{full ? '▾' : '▴'}</button>
-        <button className="rounded px-2 py-1 text-xs text-ink-dim" onClick={onClose} aria-label="Close panel">✕</button>
-      </div>
+      {!compactHeader && (
+        <div className="flex items-center gap-2 px-3 pb-1">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-ink">{title}</h2>
+          <div className="flex-1" />
+          {actions}
+          <button className="hit rounded px-2 text-xs text-ink-dim" onClick={() => setFull(!full)} aria-label={full ? tr('bottomSheet.half_height') : tr('bottomSheet.full_height')}>{full ? '▾' : '▴'}</button>
+          <button className="hit rounded px-2 text-xs text-ink-dim" onClick={onClose} aria-label={tr('bottomSheet.close_panel')}>✕</button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[max(8px,env(safe-area-inset-bottom))]">{children}</div>
     </section>
   );

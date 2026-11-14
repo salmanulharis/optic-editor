@@ -22,6 +22,23 @@ export function useMobileLayout(): boolean {
   return m;
 }
 
+/** Tracks a CSS media query (e.g. the desktop layout's breakpoints). */
+export function useMediaQuery(query: string): boolean {
+  const [m, setM] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const f = () => setM(mq.matches);
+    f();
+    mq.addEventListener('change', f);
+    return () => mq.removeEventListener('change', f);
+  }, [query]);
+  return m;
+}
+
+/** Desktop layout widths: the Presets / History column shows from 1024 px, every top-bar control from 1280 px. */
+export const WIDE_QUERY = '(min-width: 1024px)';
+export const XL_QUERY = '(min-width: 1280px)';
+
 /** iOS / iPadOS (WebKit everywhere): tighter GPU and memory budgets. */
 export const isIOS = () =>
   typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1));

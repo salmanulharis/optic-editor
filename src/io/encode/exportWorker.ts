@@ -9,9 +9,10 @@ import { buildExifFromBlocks, exifIfdSpec, patchExif, type ExifBlocks, type Exif
 import { type ExportRenderInput, renderFullResolution, resampleU16 } from './exportRender';
 import { type ExportSettings, normalizeSettings, outputSize } from './exportSettings';
 import { ditherTo8, encodeJpeg } from './jpeg';
-import { applyWatermark, buildXmp, cropCenter, sharpenForOutput } from './postprocess';
+import { type WatermarkMark, applyWatermark, buildXmp, cropCenter, sharpenForOutput } from './postprocess';
 import { encodePng16 } from './png16';
 import { encodeTiff16 } from './tiff';
+import { canRenderWebGL2, createCanvas, hasOffscreenCanvas } from '../canvas';
 
 export interface EncodeRequest {
   rgb16: Uint16Array;
@@ -21,20 +22,15 @@ export interface EncodeRequest {
   exif: ExifBlocks | null;
   /** Raw EXIF TIFF structure of a JPEG source (kept verbatim in "keep all" mode). */
   sourceJpegExif: Uint8Array | null;
+  /** Watermark drawn by the main thread at the output size (workers without OffscreenCanvas). */
+  watermarkMark?: WatermarkMark | null;
 }
 
 type Progress = (f: number, label: string) => void;
 
+/** Worker WebGL 2 with float targets (needs OffscreenCanvas in workers). */
 function canRenderHere(): boolean {
-  try {
-    if (typeof OffscreenCanvas === 'undefined') return false;
-    const gl = new OffscreenCanvas(1, 1).getContext('webgl2');
-    const ok = !!gl && !!gl.getExtension('EXT_color_buffer_float');
-    gl?.getExtension('WEBGL_lose_context')?.loseContext();
-    return ok;
-  } catch {
-    return false;
-  }
+  return hasOffscreenCanvas() && canRenderWebGL2();
 }
 
 async function encode(req: EncodeRequest, progress: Progress): Promise<Uint8Array> {
@@ -55,7 +51,8 @@ async function encode(req: EncodeRequest, progress: Progress): Promise<Uint8Arra
     progress(0.73, 'Output sharpening');
     rgb = sharpenForOutput(rgb, width, height, s.sharpen.target, s.sharpen.amount);
   }
-  if (s.watermark.enabled) await applyWatermark(rgb, width, height, s.watermark);
+  // Without a canvas in this worker, the main thread drew the mark (req.watermarkMark).
+  if (s.watermark.enabled) await applyWatermark(rgb, width, height, s.watermark, req.watermarkMark);
   const icc = buildIcc(s.colorSpace);
   const opts: ExifWriteOptions = {
     mode: s.metadata,
@@ -129,10 +126,14 @@ const api = {
     onProgress: Progress,
   ): Promise<Uint8Array> {
     const progress: Progress = (f, l) => void onProgress(f, l);
-    const canvas = new OffscreenCanvas(1, 1);
+    const canvas = createCanvas(1, 1);
     const img = await renderFullResolution(canvas, input, (f) => progress(0.02 + 0.68 * f, 'Rendering full resolution'));
     const out = await encode({ ...meta, rgb16: img.data, width: img.width, height: img.height }, progress);
     return Comlink.transfer(out, [out.buffer as ArrayBuffer]);
+  },
+  /** A 2D canvas is available in this worker (watermarks are drawn here). */
+  canDrawHere(): boolean {
+    return hasOffscreenCanvas();
   },
   /** Encode only (the main thread rendered because worker WebGL2 is unavailable). */
   async encode(req: EncodeRequest, onProgress: Progress): Promise<Uint8Array> {

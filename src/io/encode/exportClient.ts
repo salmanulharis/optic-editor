@@ -9,6 +9,8 @@ import { renderFullResolution } from './exportRender';
 import { isIOS } from '../../ui/mobile/layout';
 import { type ExportSettings, MIME, exportFileName } from './exportSettings';
 import type { ExportWorkerApi } from './exportWorker';
+import { normalizeSettings, outputSize } from './exportSettings';
+import { renderWatermarkMark } from './postprocess';
 
 type Writable = { write(d: BlobPart): Promise<void>; close(): Promise<void> };
 export type SaveHandle = { createWritable(): Promise<Writable> };
@@ -73,8 +75,13 @@ export async function renderAndEncode(
         () => new Promise((r) => setTimeout(r, 0)),
       );
       if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+      // A worker without OffscreenCanvas can't draw text or images: draw the watermark here, at the
+      // size the worker will output, and let it composite the pixels.
+      const s = normalizeSettings(settings);
+      const out = outputSize(img.width, img.height, s.size, s.allowUpscale);
+      const watermarkMark = s.watermark.enabled && !(await api.canDrawHere()) ? await renderWatermarkMark(out.width, out.height, s.watermark) : null;
       bytes = await api.encode(
-        Comlink.transfer({ ...meta, rgb16: img.data, width: img.width, height: img.height }, [img.data.buffer]),
+        Comlink.transfer({ ...meta, watermarkMark, rgb16: img.data, width: img.width, height: img.height }, [img.data.buffer]),
         progress,
       );
     }

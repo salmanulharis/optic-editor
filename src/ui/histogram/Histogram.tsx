@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /** RGB + luminance histogram with clipping indicators (click to toggle the J overlay). */
 import { useEffect, useRef } from 'react';
 import { useUi } from '../../state/uiStore';
@@ -39,23 +40,23 @@ export function HistogramView() {
   const toggle = () => useUi.getState().set({ clipOverlay: !overlay });
 
   return (
-    <div className="relative border-b border-line bg-[#202020] p-2">
+    <div className="relative border-b border-line bg-hist-bg p-2" dir="ltr">
       <canvas ref={ref} width={W} height={H} className="h-24 w-full" />
       <button
-        title="Shadow clipping (J)"
+        title={tr('histogram.shadow_clipping_j')}
         onClick={toggle}
         className={`absolute left-2 top-2 h-0 w-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent ${
-          lo ? 'border-t-[#5b7cff]' : 'border-t-[#555]'
+          lo ? 'border-t-blue-500' : 'border-t-edge'
         } ${overlay ? 'opacity-100' : 'opacity-80'}`}
       />
       <button
-        title="Highlight clipping (J)"
+        title={tr('histogram.highlight_clipping_j')}
         onClick={toggle}
         className={`absolute right-2 top-2 h-0 w-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent ${
-          hi ? 'border-t-[#ff5050]' : 'border-t-[#555]'
+          hi ? 'border-t-red-500' : 'border-t-edge'
         } ${overlay ? 'opacity-100' : 'opacity-80'}`}
       />
-      {overlay && <div className="absolute bottom-1 right-2 text-[10px] text-ink-faint">clipping overlay</div>}
+      {overlay && <div className="absolute bottom-1 right-2 text-2xs text-ink-faint">{tr('histogram.clipping_overlay')}</div>}
     </div>
   );
 }

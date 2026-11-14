@@ -14,6 +14,7 @@ import { lutRegistry } from '../pipeline/lutRegistry';
 import { type MaskBitmap, maskRegistry } from '../pipeline/maskRegistry';
 import type { ImageModel, OutputTarget } from '../pipeline/types';
 import type { Recipe } from '../recipe/schema';
+import { type AnyCanvas, canRenderWebGL2, canvasToBlob, context2d, createCanvas } from '../io/canvas';
 
 export interface RenderJob {
   proxy: FloatImage;
@@ -30,27 +31,20 @@ export interface RenderedPixels {
   height: number;
 }
 
-let state: { canvas: OffscreenCanvas; gl: WebGL2RenderingContext; pipeline: Pipeline } | null = null;
+let state: { canvas: AnyCanvas; gl: WebGL2RenderingContext; pipeline: Pipeline } | null = null;
 
 function ctx() {
   if (state && !state.gl.isContextLost()) return state;
   state?.pipeline.dispose();
-  const canvas = new OffscreenCanvas(1, 1);
+  const canvas = createCanvas(1, 1);
   const gl = createContext(canvas, false);
   state = { canvas, gl, pipeline: new Pipeline(gl, getCaps(gl).floatLinear, { intermediate: 'rgba16f' }) };
   return state;
 }
 
+/** WebGL 2 with float targets here (worker: needs OffscreenCanvas; main thread: any canvas). */
 export function canRender(): boolean {
-  try {
-    if (typeof OffscreenCanvas === 'undefined') return false;
-    const gl = new OffscreenCanvas(1, 1).getContext('webgl2');
-    const ok = !!gl && !!gl.getExtension('EXT_color_buffer_float');
-    gl?.getExtension('WEBGL_lose_context')?.loseContext();
-    return ok;
-  } catch {
-    return false;
-  }
+  return canRenderWebGL2();
 }
 
 /**
@@ -106,19 +100,19 @@ export async function renderWhole(job: RenderJob, maxEdge: number, opts: { linea
 
 /** Encode 8-bit RGBA as WebP (else JPEG) at its size and as a thumbnail. */
 export async function encodePreview(px: RenderedPixels, thumbEdge: number): Promise<{ preview: Blob; thumb: Blob }> {
-  const full = new OffscreenCanvas(px.width, px.height);
-  const fctx = full.getContext('2d')!;
+  const full = createCanvas(px.width, px.height);
+  const fctx = context2d(full);
   const rgba = new Uint8ClampedArray(px.data.buffer as ArrayBuffer, (px.data as Uint8Array).byteOffset, px.data.length);
   for (let i = 3; i < rgba.length; i += 4) rgba[i] = 255;
   fctx.putImageData(new ImageData(rgba, px.width, px.height), 0, 0);
   const k = Math.min(1, thumbEdge / Math.max(px.width, px.height));
-  const small = new OffscreenCanvas(Math.max(1, Math.round(px.width * k)), Math.max(1, Math.round(px.height * k)));
-  const sctx = small.getContext('2d')!;
+  const small = createCanvas(Math.max(1, Math.round(px.width * k)), Math.max(1, Math.round(px.height * k)));
+  const sctx = context2d(small);
   sctx.imageSmoothingQuality = 'high';
   sctx.drawImage(full, 0, 0, small.width, small.height);
-  const enc = async (c: OffscreenCanvas, q: number) => {
-    const b = await c.convertToBlob({ type: 'image/webp', quality: q });
-    return b.type === 'image/webp' ? b : c.convertToBlob({ type: 'image/jpeg', quality: q });
+  const enc = async (c: AnyCanvas, q: number) => {
+    const b = await canvasToBlob(c, 'image/webp', q);
+    return b.type === 'image/webp' ? b : canvasToBlob(c, 'image/jpeg', q);
   };
   return { preview: await enc(full, 0.86), thumb: await enc(small, 0.82) };
 }

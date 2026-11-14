@@ -33,6 +33,10 @@ import { useImage } from '../state/imageStore';
 import { useUi } from '../state/uiStore';
 import { ensureAiMask } from '../ai/aiMasks';
 import { getRenderer } from './actions';
+import { toastError } from '../ui/feedback/toasts';
+import { t } from '../i18n';
+
+const maskLimitMessage = () => t('masks.limit', { masks: MAX_MASKS, parts: MAX_COMPONENTS });
 
 const edit = () => useEdit.getState();
 const masksOf = () => edit().recipe.masks;
@@ -48,10 +52,10 @@ function mapMasks(r: Recipe, id: string, fn: (m: Mask) => Mask): Recipe {
 /** Error text for an add that would exceed the shader budget, else null. */
 export function budgetError(type: MaskType, newMask = false): string | null {
   const ms = masksOf();
-  if (newMask && ms.length >= MAX_MASKS) return `Up to ${MAX_MASKS} masks per photo`;
-  if (componentCount(ms) >= MAX_COMPONENTS) return `Up to ${MAX_COMPONENTS} mask components per photo`;
+  if (newMask && ms.length >= MAX_MASKS) return t('masks.limit.masks', { n: MAX_MASKS });
+  if (componentCount(ms) >= MAX_COMPONENTS) return t('masks.limit.components', { n: MAX_COMPONENTS });
   if (type === 'brush' && ms.flatMap((m) => m.components).filter((c) => c.type === 'brush').length >= MAX_BRUSH_COMPONENTS) {
-    return `Up to ${MAX_BRUSH_COMPONENTS} brush components per photo`;
+    return t('masks.limit.brushes', { n: MAX_BRUSH_COMPONENTS });
   }
   return null;
 }
@@ -75,7 +79,7 @@ function defaultName(type: MaskType, part?: PersonPart) {
 /** Create a mask with one component (the first step of every new mask) and select it. */
 export function addMask(type: MaskType, params?: Partial<MaskParams[MaskType]>, adjustments?: Partial<MaskAdjustments>) {
   const err = budgetError(type, true);
-  if (err) { alert(err); return; }
+  if (err) { toastError(err); return; }
   const comp = prepareComponent(newComponent(type, 'add', params as Partial<MaskParams[typeof type]>));
   const m = newMask(defaultName(type, (params as MaskParams['aiPerson'] | undefined)?.part), [comp], adjustments);
   edit().apply((r) => ({ ...r, masks: [...r.masks, m] }));
@@ -85,7 +89,7 @@ export function addMask(type: MaskType, params?: Partial<MaskParams[MaskType]>, 
 /** Add a component to a mask (add / subtract / intersect). */
 export function addComponent(maskId: string, type: MaskType, op: MaskOp, params?: Partial<MaskParams[MaskType]>) {
   const err = budgetError(type);
-  if (err) { alert(err); return; }
+  if (err) { toastError(err); return; }
   const comp = prepareComponent(newComponent(type, op, params as Partial<MaskParams[typeof type]>));
   edit().apply((r) => mapMasks(r, maskId, (m) => ({ ...m, components: [...m.components, comp] })));
   useUi.getState().set({ selectedMask: maskId, selectedComp: comp.id, maskPick: type === 'colorRange' });
@@ -130,7 +134,7 @@ export function deleteMask(id: string) {
 export function duplicateMask(id: string) {
   const m = findMask(id);
   if (!m) return;
-  if (masksOf().length >= MAX_MASKS || componentCount(masksOf()) + m.components.length > MAX_COMPONENTS) { alert('Mask limit reached'); return; }
+  if (masksOf().length >= MAX_MASKS || componentCount(masksOf()) + m.components.length > MAX_COMPONENTS) { toastError(maskLimitMessage()); return; }
   const copy: Mask = { ...structuredClone(m), id: maskUid(), name: `${m.name} copy`, components: m.components.map((c) => ({ ...structuredClone(c), id: maskUid() })) };
   edit().apply((r) => {
     const i = r.masks.findIndex((x) => x.id === id);
@@ -277,7 +281,7 @@ export function applyMaskPreset(p: MaskPreset) {
     }), d.adjustments));
   const cur = masksOf();
   if (cur.length + masks.length > MAX_MASKS || componentCount(cur) + masks.reduce((s, m) => s + m.components.length, 0) > MAX_COMPONENTS) {
-    alert('Mask limit reached');
+    toastError(maskLimitMessage());
     return;
   }
   edit().apply((r) => ({ ...r, masks: [...r.masks, ...masks] }), `Mask preset: ${p.name}`);

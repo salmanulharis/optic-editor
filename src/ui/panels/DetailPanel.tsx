@@ -6,6 +6,7 @@ import { useUi } from '../../state/uiStore';
 import { Section, SubHead } from '../controls/Section';
 import { Slider } from '../controls/Slider';
 import { bindSection } from './common';
+import { t as tr } from '../../i18n';
 
 /**
  * Detail: output sharpening and noise reduction. Hold Alt (Option) while dragging Masking to see
@@ -38,30 +39,30 @@ export function DetailPanel() {
 
   return (
     <Section
-      title="Detail"
+      title={tr('detailPanel.detail')}
       enabled={d.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('detail', on)}
       onReset={() => s.apply({ ...raw, enabled: d.enabled })}
     >
       <div onPointerDownCapture={() => useUi.getState().set({ detailFocus: true })}>
-        {zoom !== 'fit' && zoom >= 1 ? null : <div className="mb-1 text-[11px] text-ink-faint">Zoom to 100% to judge sharpening and noise.</div>}
-        <SubHead onReset={() => s.apply({ sharpen: { ...raw.sharpen } })}>Sharpening</SubHead>
-        {sl('Amount', d.sharpen.amount, raw.sharpen.amount, (v) => sharpen({ amount: v }), 0, 150)}
-        {sl('Radius', d.sharpen.radius, raw.sharpen.radius, (v) => sharpen({ radius: v }), 0.5, 3, 0.1, 1)}
-        {sl('Detail', d.sharpen.detail, raw.sharpen.detail, (v) => sharpen({ detail: v }))}
+        {zoom !== 'fit' && zoom >= 1 ? null : <div className="mb-1 text-2xs text-ink-faint">{tr('detailPanel.zoom_to_100_to_judge_sharpening')}</div>}
+        <SubHead onReset={() => s.apply({ sharpen: { ...raw.sharpen } })}>{tr('detailPanel.sharpening')}</SubHead>
+        {sl(tr('detailPanel.amount'), d.sharpen.amount, raw.sharpen.amount, (v) => sharpen({ amount: v }), 0, 150)}
+        {sl(tr('detailPanel.radius'), d.sharpen.radius, raw.sharpen.radius, (v) => sharpen({ radius: v }), 0.5, 3, 0.1, 1)}
+        {sl(tr('detailPanel.detail'), d.sharpen.detail, raw.sharpen.detail, (v) => sharpen({ detail: v }))}
         <div
-          title="Hold Alt / Option while dragging to see the mask"
+          title={tr('detailPanel.hold_alt_option_while_dragging_to')}
           onPointerDownCapture={(e) => { if (e.altKey) useUi.getState().set({ maskView: 'sharpen' }); }}
         >
-          {sl('Masking', d.sharpen.masking, 0, (v) => sharpen({ masking: v }))}
+          {sl(tr('detailPanel.masking'), d.sharpen.masking, 0, (v) => sharpen({ masking: v }))}
         </div>
-        <SubHead onReset={() => s.apply({ nr: { ...raw.nr } })}>Noise reduction</SubHead>
-        {sl('Luminance', d.nr.lum, raw.nr.lum, (v) => nr({ lum: v }))}
-        {sl('Detail', d.nr.lumDetail, defaultRecipe().detail.nr.lumDetail, (v) => nr({ lumDetail: v }))}
-        {sl('Contrast', d.nr.lumContrast, 0, (v) => nr({ lumContrast: v }))}
-        {sl('Color', d.nr.color, raw.nr.color, (v) => nr({ color: v }))}
-        {sl('Color detail', d.nr.colorDetail, defaultRecipe().detail.nr.colorDetail, (v) => nr({ colorDetail: v }))}
-        {sl('Smoothness', d.nr.colorSmooth, defaultRecipe().detail.nr.colorSmooth, (v) => nr({ colorSmooth: v }))}
+        <SubHead onReset={() => s.apply({ nr: { ...raw.nr } })}>{tr('detailPanel.noise_reduction')}</SubHead>
+        {sl(tr('detailPanel.luminance'), d.nr.lum, raw.nr.lum, (v) => nr({ lum: v }))}
+        {sl(tr('detailPanel.detail'), d.nr.lumDetail, defaultRecipe().detail.nr.lumDetail, (v) => nr({ lumDetail: v }))}
+        {sl(tr('detailPanel.contrast'), d.nr.lumContrast, 0, (v) => nr({ lumContrast: v }))}
+        {sl(tr('detailPanel.color'), d.nr.color, raw.nr.color, (v) => nr({ color: v }))}
+        {sl(tr('detailPanel.color_detail'), d.nr.colorDetail, defaultRecipe().detail.nr.colorDetail, (v) => nr({ colorDetail: v }))}
+        {sl(tr('detailPanel.smoothness'), d.nr.colorSmooth, defaultRecipe().detail.nr.colorSmooth, (v) => nr({ colorSmooth: v }))}
       </div>
     </Section>
   );

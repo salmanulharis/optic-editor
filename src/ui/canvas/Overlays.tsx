@@ -139,7 +139,7 @@ export function CompareOverlay(_props: { box: ViewBox }) {
   const before = `Before · ${beforeRecipe(img).label}`;
   const after = 'After';
   const label = (text: string, cls: string) => (
-    <span className={`pointer-events-none absolute rounded bg-black/60 px-2 py-0.5 text-[11px] text-ink ${cls}`}>{text}</span>
+    <span className={`pointer-events-none absolute rounded bg-black/60 px-2 py-0.5 text-2xs text-ink ${cls}`}>{text}</span>
   );
   if (mode === 'side') {
     return (

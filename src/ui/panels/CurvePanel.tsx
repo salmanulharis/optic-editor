@@ -3,6 +3,7 @@ import { useEdit } from '../../state/editStore';
 import { type CurveChannel, useUi } from '../../state/uiStore';
 import { CurveEditor } from '../controls/CurveEditor';
 import { Section } from '../controls/Section';
+import { t as tr } from '../../i18n';
 
 const CHANNELS: Array<[CurveChannel, string, string]> = [
   ['rgb', 'RGB', '#d4d4d4'],
@@ -22,7 +23,7 @@ export function CurvePanel() {
 
   return (
     <Section
-      title="Curve"
+      title={tr('curvePanel.curve')}
       enabled={curve.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('curve', on)}
       onReset={() =>
@@ -39,19 +40,18 @@ export function CurvePanel() {
             onClick={() => useUi.getState().set({ curveChannel: id })}
             className={`rounded px-2 py-0.5 text-xs ${ch === id ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
           >
-            <span className="mr-1 inline-block h-2 w-2 rounded-full" style={{ background: c }} />
+            <span className="me-1 inline-block h-2 w-2 rounded-full" style={{ background: c }} />
             {label}
           </button>
         ))}
         <button
-          className="ml-auto text-[11px] text-ink-faint hover:text-ink"
+          className="ms-auto text-2xs text-ink-faint hover:text-ink"
           onClick={() => useEdit.getState().apply((r) => ({ ...r, curve: { ...r.curve, [ch]: [...IDENTITY_CURVE] } }))}
-        >
-          Reset {CHANNELS.find((c) => c[0] === ch)![1]}
+        >{tr('curvePanel.reset')} {CHANNELS.find((c) => c[0] === ch)![1]}
         </button>
       </div>
       <CurveEditor points={curve[ch]} color={color} onChange={set} onCommit={() => useEdit.getState().commit()} histogram={bins} />
-      <p className="mt-1 text-[10px] text-ink-faint">Click to add · drag to move · drag off or double-click to delete</p>
+      <p className="mt-1 text-xs text-ink-faint">{tr('curvePanel.click_to_add_drag_to_move')}</p>
     </Section>
   );
 }

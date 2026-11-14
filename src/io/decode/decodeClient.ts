@@ -4,6 +4,7 @@ import type { ExifBlocks } from '../metadata/exif';
 import type { ImageDecoderApi } from './imageDecoder.worker';
 import type { RawDecoderApi } from './rawDecoder.worker';
 import type { DecodeResult, ProgressFn, SourceFormat } from './types';
+import { hasOffscreenCanvas } from '../canvas';
 
 const RAW_EXT = new Set(['dng', 'cr2', 'cr3', 'crw', 'nef', 'nrw', 'arw', 'srf', 'sr2', 'raf', 'rw2', 'orf', 'pef', 'srw', 'x3f', '3fr', 'iiq', 'erf', 'mos', 'mrw', 'kdc', 'dcr', 'raw', 'rwl', 'gpr']);
 
@@ -58,6 +59,10 @@ export function decodeFile(file: File, proxyLongEdge: number, onProgress: Progre
         worker = new Worker(new URL('./rawDecoder.worker.ts', import.meta.url), { type: 'module' });
         const api = Comlink.wrap<RawDecoderApi>(worker);
         result = await api.decode(Comlink.transfer(bytes, [bytes.buffer]), file.name, { proxyLongEdge }, progress);
+      } else if ((format === 'webp' || format === 'avif') && !hasOffscreenCanvas()) {
+        // No OffscreenCanvas (so none in workers either): the browser decode runs here instead.
+        const { decodeImage } = await import('./imageDecode');
+        result = await decodeImage(bytes, format, { proxyLongEdge }, onProgress);
       } else {
         worker = new Worker(new URL('./imageDecoder.worker.ts', import.meta.url), { type: 'module' });
         const api = Comlink.wrap<ImageDecoderApi>(worker);

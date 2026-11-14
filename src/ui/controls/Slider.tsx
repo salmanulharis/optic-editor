@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * Adjustment slider.
  *  - Drag the track; release commits one undo step.
@@ -134,7 +135,7 @@ export function Slider(props: SliderProps) {
         <span
           className="text-xs text-ink-dim cursor-default"
           onDoubleClick={reset}
-          title="Double-click to reset"
+          title={tr('slider.double_click_to_reset')}
         >
           {label}
         </span>
@@ -153,6 +154,7 @@ export function Slider(props: SliderProps) {
       </div>
       <div
         ref={trackRef}
+        dir="ltr"
         role="slider"
         aria-label={label}
         aria-valuemin={min}
@@ -195,12 +197,12 @@ export function Slider(props: SliderProps) {
         />
         {!track && (
           <div
-            className="absolute top-1/2 h-[3px] -translate-y-1/2 bg-[#8a8a8a] rounded-full"
+            className="absolute top-1/2 h-[3px] -translate-y-1/2 bg-control rounded-full"
             style={{ left: `${Math.min(pos, zeroPos) * 100}%`, width: `${Math.abs(pos - zeroPos) * 100}%` }}
           />
         )}
         <div
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#1c1c1c] bg-[#cfcfcf] shadow group-hover:bg-accent-hi [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-thumb-edge bg-thumb shadow group-hover:bg-accent-hi [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5"
           style={{ left: `${pos * 100}%` }}
         />
       </div>

@@ -11,6 +11,7 @@ import type { Recipe } from '../recipe/schema';
 import { type LoadedImage, buildLoadedImage, defaultRecipeFor } from '../state/imageStore';
 import type { PhotoRecord } from './db';
 import { readFile } from './opfs';
+import { sessionFile } from './sessionFiles';
 
 /** The original file of a catalog photo (asks for permission again for referenced files). */
 export async function photoFile(p: PhotoRecord, interactive = false): Promise<File> {
@@ -20,7 +21,12 @@ export async function photoFile(p: PhotoRecord, interactive = false): Promise<Fi
     return new File([f], p.fileName, { type: f.type, lastModified: p.lastModified });
   }
   const h = p.handle as (FileSystemFileHandle & { queryPermission?(o: unknown): Promise<string>; requestPermission?(o: unknown): Promise<string> }) | undefined;
-  if (!h) throw new Error(`${p.fileName}: the original is not available`);
+  if (!h) {
+    // Imported this session in a browser that can't keep originals (see sessionFiles.ts).
+    const s = sessionFile(p.id);
+    if (s) return s;
+    throw new Error(`${p.fileName}: the original is not available`);
+  }
   let perm = (await h.queryPermission?.({ mode: 'read' })) ?? 'granted';
   if (perm !== 'granted' && interactive) perm = (await h.requestPermission?.({ mode: 'read' })) ?? 'denied';
   if (perm !== 'granted') throw new Error(`${p.fileName}: permission to read the original is needed (open it once to grant access)`);

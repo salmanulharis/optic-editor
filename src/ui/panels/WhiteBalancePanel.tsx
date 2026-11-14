@@ -7,6 +7,7 @@ import { useUi } from '../../state/uiStore';
 import { Section, ToolButton } from '../controls/Section';
 import { Slider } from '../controls/Slider';
 import { bindSection, grad } from './common';
+import { t as tr } from '../../i18n';
 
 const TEMP_TRACK = grad('#3f6fd8', '#9fb4d8', '#d8cfa0', '#e0b640');
 const TINT_TRACK = grad('#3fae4a', '#b8c8b0', '#c8b0c4', '#c84fc0');
@@ -41,25 +42,25 @@ export function WhiteBalancePanel() {
 
   return (
     <Section
-      title="White Balance"
+      title={tr('whiteBalancePanel.white_balance')}
       enabled={wb.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('whiteBalance', on)}
       onReset={() => s.apply({ ...defaultRecipe().whiteBalance, ...asShot })}
     >
       <div className="mb-2 flex items-center gap-2">
         <select
-          aria-label="White balance mode"
+          aria-label={tr('whiteBalancePanel.white_balance_mode')}
           className="flex-1 rounded border border-line bg-raise px-1.5 py-1 text-xs text-ink outline-none"
           value={wb.mode}
           onChange={(e) => setMode(e.target.value as WbMode)}
         >
-          <option value="asShot">As Shot</option>
-          <option value="auto">Auto</option>
-          <option value="custom">Custom</option>
+          <option value="asShot">{tr('whiteBalancePanel.as_shot')}</option>
+          <option value="auto">{tr('whiteBalancePanel.auto')}</option>
+          <option value="custom">{tr('whiteBalancePanel.custom')}</option>
           {isRaw && Object.entries(WB_PRESETS).map(([k, p]) => <option key={k} value={k}>{p.label}</option>)}
         </select>
         <ToolButton
-          title="White balance eyedropper (W)"
+          title={tr('whiteBalancePanel.white_balance_eyedropper_w')}
           active={tool === 'wb'}
           onClick={() => useUi.getState().set({ tool: tool === 'wb' ? 'none' : 'wb' })}
         >
@@ -67,12 +68,12 @@ export function WhiteBalancePanel() {
             <path d="M14 4l6 6-2 2-6-6zM12 6l-8 8v4h4l8-8" />
           </svg>
         </ToolButton>
-        <ToolButton title="Auto white balance" onClick={autoWhiteBalance}>Auto</ToolButton>
+        <ToolButton title={tr('whiteBalancePanel.auto_white_balance')} onClick={autoWhiteBalance}>{tr('whiteBalancePanel.auto')}</ToolButton>
       </div>
       {isRaw ? (
         <>
           <Slider
-            label="Temp"
+            label={tr('whiteBalancePanel.temp')}
             value={wb.temperature}
             min={2000}
             max={50000}
@@ -85,7 +86,7 @@ export function WhiteBalancePanel() {
             onCommit={s.commit}
           />
           <Slider
-            label="Tint"
+            label={tr('whiteBalancePanel.tint')}
             value={wb.tint}
             min={-150}
             max={150}
@@ -98,19 +99,17 @@ export function WhiteBalancePanel() {
         </>
       ) : (
         <>
-          <Slider label="Temp" value={wb.temperature} min={-100} max={100} step={1} defaultValue={0} track={TEMP_TRACK}
+          <Slider label={tr('whiteBalancePanel.temp')} value={wb.temperature} min={-100} max={100} step={1} defaultValue={0} track={TEMP_TRACK}
             onChange={(v) => s.set({ temperature: v, mode: 'custom' })} onCommit={s.commit} />
-          <Slider label="Tint" value={wb.tint} min={-100} max={100} step={1} defaultValue={0} track={TINT_TRACK}
+          <Slider label={tr('whiteBalancePanel.tint')} value={wb.tint} min={-100} max={100} step={1} defaultValue={0} track={TINT_TRACK}
             onChange={(v) => s.set({ tint: v, mode: 'custom' })} onCommit={s.commit} />
         </>
       )}
       <div className="mt-2 border-t border-line pt-2">
-        <Slider label="Remove color cast" value={wb.castStrength} min={0} max={100} step={1} defaultValue={0}
+        <Slider label={tr('whiteBalancePanel.remove_color_cast')} value={wb.castStrength} min={0} max={100} step={1} defaultValue={0}
           onChange={onCast} onCommit={s.commit} />
         {wb.castEstimate && (
-          <button className="mt-1 text-[11px] text-ink-faint hover:text-ink" onClick={() => s.apply({ castEstimate: estimateColorCast() })}>
-            Re-estimate cast
-          </button>
+          <button className="mt-1 text-2xs text-ink-faint hover:text-ink" onClick={() => s.apply({ castEstimate: estimateColorCast() })}>{tr('whiteBalancePanel.re_estimate_cast')}</button>
         )}
       </div>
     </Section>

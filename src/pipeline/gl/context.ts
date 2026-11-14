@@ -21,6 +21,17 @@ export function getCaps(gl: WebGL2RenderingContext): GLCaps {
   };
 }
 
+/**
+ * WebKit (Safari, and every browser on iOS) shows a cleared canvas after the viewer's context has
+ * drawn into a framebuffer outside the render loop (preset thumbnails, auto tools, the pixel
+ * readout) unless the drawing buffer is preserved. Chromium and Firefox keep the shown frame.
+ */
+function needsPreservedBuffer(canvas: HTMLCanvasElement | OffscreenCanvas): boolean {
+  if (typeof HTMLCanvasElement === 'undefined' || !(canvas instanceof HTMLCanvasElement)) return false;
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+  return /AppleWebKit/.test(ua) && !/Chrome\/|Chromium\//.test(ua);
+}
+
 /** Create a WebGL2 context, asking for a Display P3 drawing buffer where supported. */
 export function createContext(canvas: HTMLCanvasElement | OffscreenCanvas, wantP3: boolean): WebGL2RenderingContext {
   const gl = canvas.getContext('webgl2', {
@@ -29,7 +40,7 @@ export function createContext(canvas: HTMLCanvasElement | OffscreenCanvas, wantP
     depth: false,
     stencil: false,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: false,
+    preserveDrawingBuffer: needsPreservedBuffer(canvas),
     powerPreference: 'high-performance',
   }) as WebGL2RenderingContext | null;
   if (!gl) throw new Error('WebGL2 is not available.');

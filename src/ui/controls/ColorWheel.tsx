@@ -5,6 +5,7 @@
  */
 import { useRef } from 'react';
 import type { Wheel } from '../../recipe/schema';
+import { t as tr } from '../../i18n';
 
 interface Props {
   value: Wheel;
@@ -48,8 +49,9 @@ export function ColorWheel({ value, size, label, onChange, onCommit }: Props) {
     <div className="flex flex-col items-center">
       <div
         ref={ref}
+        dir="ltr"
         role="slider"
-        aria-label={`${label} wheel`}
+        aria-label={tr('colorWheel.label_wheel', { label: label })}
         aria-valuetext={`hue ${Math.round(value.hue)}°, saturation ${Math.round(value.sat)}`}
         tabIndex={0}
         className="relative cursor-crosshair touch-none rounded-full outline-none focus-visible:ring-1 focus-visible:ring-edge"
@@ -82,7 +84,7 @@ export function ColorWheel({ value, size, label, onChange, onCommit }: Props) {
           style={{ left: px, top: py, background: value.sat ? `oklch(0.72 ${0.04 + value.sat * 0.0012} ${value.hue})` : '#8a8a8a' }}
         />
       </div>
-      <div className="mt-1 text-[10px] tabular-nums text-ink-faint">
+      <div className="mt-1 text-2xs tabular-nums text-ink-faint">
         {label} · {Math.round(value.hue)}° · {Math.round(value.sat)}
       </div>
     </div>

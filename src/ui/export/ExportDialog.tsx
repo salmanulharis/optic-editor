@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * Export: the single-photo dialog (editor, Ctrl/Cmd+E), the batch dialog (the selection) and the
  * export queue panel. Both dialogs share the settings form and export presets (built-in + saved).
@@ -30,8 +31,11 @@ import { type LoadedImage, useImage } from '../../state/imageStore';
 import { targetIds, useLibrary } from '../../state/libraryStore';
 import { useUi } from '../../state/uiStore';
 import { useFocusTrap } from '../focusTrap';
+import { confirmDialog, promptDialog } from '../feedback/dialogs';
 import { useExportJob } from './ExportProgress';
 import { useSettings } from '../../state/settingsStore';
+import { IconButton } from '../controls/IconButton';
+import { tp } from '../../i18n/format';
 
 // ---------------------------------------------------------------------------
 // Presets
@@ -76,7 +80,7 @@ async function initialSettings(): Promise<{ settings: ExportSettings; presetId: 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="mb-2.5">
-      <div className="mb-1 text-[10px] uppercase tracking-wider text-ink-faint">{label}</div>
+      <div className="mb-1 text-2xs uppercase tracking-wider text-ink-faint">{label}</div>
       {children}
     </div>
   );
@@ -101,8 +105,8 @@ function SettingsForm({ s, update, sample }: { s: ExportSettings; update(p: Part
   return (
     <div className="grid gap-x-6 md:grid-cols-2">
       <div>
-        <Row label="Format">
-          <div className="flex flex-wrap rounded border border-line" role="radiogroup" aria-label="Format">
+        <Row label={tr('exportDialog.format')}>
+          <div className="flex flex-wrap rounded border border-line" role="radiogroup" aria-label={tr('exportDialog.format')}>
             {(Object.keys(FORMAT_LABEL) as ExportFormat[]).map((f) => (
               <button key={f} role="radio" aria-checked={s.format === f}
                 onClick={() => update({ format: f, colorSpace: FORMAT_CAPS[f].spaces.includes(s.colorSpace) ? s.colorSpace : 'srgb' })}
@@ -111,109 +115,115 @@ function SettingsForm({ s, update, sample }: { s: ExportSettings; update(p: Part
               </button>
             ))}
           </div>
-          {!caps.metadata && <div className="mt-1 text-[11px] text-ink-faint">{FORMAT_LABEL[s.format]}: sRGB only, no embedded metadata (encoder limits).</div>}
+          {!caps.metadata && <div className="mt-1 text-2xs text-ink-faint">{FORMAT_LABEL[s.format]}{tr('exportDialog.srgb_only_no_embedded_metadata_encoder')}</div>}
         </Row>
         {caps.quality && (
-          <Row label={`Quality ${s.quality}`}>
-            <input type="range" min={1} max={100} value={s.quality} className="w-full accent-[#9a9a9a]" aria-label="Quality" onChange={(e) => update({ quality: +e.target.value })} />
-            {s.format === 'jpeg' && <div className="text-[11px] text-ink-faint">{s.quality >= 90 ? '4:4:4 chroma (no subsampling)' : '4:2:0 chroma subsampling'}</div>}
+          <Row label={tr('exportDialog.quality_quality', { quality: s.quality })}>
+            <input type="range" min={1} max={100} value={s.quality} className="w-full accent-control" aria-label={tr('exportDialog.quality')} onChange={(e) => update({ quality: +e.target.value })} />
+            {s.format === 'jpeg' && <div className="text-2xs text-ink-faint">{s.quality >= 90 ? tr('exportDialog.4_4_4_chroma_no_subsampling') : tr('exportDialog.4_2_0_chroma_subsampling')}</div>}
           </Row>
         )}
         {s.format === 'tiff' && (
-          <Row label="Compression">
-            <select className="input" aria-label="TIFF compression" value={s.tiffCompression} onChange={(e) => update({ tiffCompression: e.target.value as 'deflate' | 'none' })}>
-              <option value="deflate">ZIP (lossless)</option>
-              <option value="none">None</option>
+          <Row label={tr('exportDialog.compression')}>
+            <select className="input" aria-label={tr('exportDialog.tiff_compression')} value={s.tiffCompression} onChange={(e) => update({ tiffCompression: e.target.value as 'deflate' | 'none' })}>
+              <option value="deflate">{tr('exportDialog.zip_lossless')}</option>
+              <option value="none">{tr('exportDialog.none')}</option>
             </select>
           </Row>
         )}
-        <Row label="Color space">
-          <select className="input" aria-label="Color space" value={s.colorSpace} onChange={(e) => update({ colorSpace: e.target.value as ColorSpaceId })}>
+        <Row label={tr('exportDialog.color_space')}>
+          <select className="input" aria-label={tr('exportDialog.color_space')} value={s.colorSpace} onChange={(e) => update({ colorSpace: e.target.value as ColorSpaceId })}>
             {caps.spaces.map((id) => <option key={id} value={id}>{COLOR_SPACES[id].label}</option>)}
           </select>
         </Row>
-        <Row label="Size">
+        <Row label={tr('exportDialog.size')}>
           <div className="flex flex-wrap items-center gap-2">
-            <select className="input" value={s.size.mode} onChange={(e) => setSize(e.target.value as ExportSize['mode'])} aria-label="Size mode">
-              <option value="original">Original</option>
-              <option value="longEdge">Long edge</option>
-              <option value="shortEdge">Short edge</option>
-              <option value="megapixels">Megapixels</option>
-              <option value="percent">Percentage</option>
-              <option value="exact">Exact (crop to fit)</option>
+            <select className="input" value={s.size.mode} onChange={(e) => setSize(e.target.value as ExportSize['mode'])} aria-label={tr('exportDialog.size_mode')}>
+              <option value="original">{tr('exportDialog.original')}</option>
+              <option value="longEdge">{tr('exportDialog.long_edge')}</option>
+              <option value="shortEdge">{tr('exportDialog.short_edge')}</option>
+              <option value="megapixels">{tr('exportDialog.megapixels')}</option>
+              <option value="percent">{tr('exportDialog.percentage')}</option>
+              <option value="exact">{tr('exportDialog.exact_crop_to_fit')}</option>
             </select>
             {(s.size.mode === 'longEdge' || s.size.mode === 'shortEdge') && (
-              <input type="number" className="input w-20" min={16} max={20000} value={s.size.px} aria-label="Pixels"
+              <input type="number" className="input w-20" min={16} max={20000} value={s.size.px} aria-label={tr('exportDialog.pixels')}
                 onChange={(e) => update({ size: { mode: s.size.mode as 'longEdge', px: num(e.target.value, 16, 20000) } })} />
             )}
             {s.size.mode === 'megapixels' && (
-              <input type="number" className="input w-20" min={0.1} max={200} step={0.1} value={s.size.mp} aria-label="Megapixels"
+              <input type="number" className="input w-20" min={0.1} max={200} step={0.1} value={s.size.mp} aria-label={tr('exportDialog.megapixels')}
                 onChange={(e) => update({ size: { mode: 'megapixels', mp: Math.max(0.1, +e.target.value || 0.1) } })} />
             )}
             {s.size.mode === 'percent' && (
-              <input type="number" className="input w-20" min={1} max={400} value={s.size.pct} aria-label="Percent"
+              <input type="number" className="input w-20" min={1} max={400} value={s.size.pct} aria-label={tr('exportDialog.percent')}
                 onChange={(e) => update({ size: { mode: 'percent', pct: num(e.target.value, 1, 400) } })} />
             )}
             {s.size.mode === 'exact' && (
               <>
-                <input type="number" className="input w-20" min={16} max={20000} value={s.size.width} aria-label="Width"
+                <input type="number" className="input w-20" min={16} max={20000} value={s.size.width} aria-label={tr('exportDialog.width')}
                   onChange={(e) => update({ size: { ...(s.size as { mode: 'exact'; width: number; height: number }), width: num(e.target.value, 16, 20000) } })} />
                 ×
-                <input type="number" className="input w-20" min={16} max={20000} value={s.size.height} aria-label="Height"
+                <input type="number" className="input w-20" min={16} max={20000} value={s.size.height} aria-label={tr('exportDialog.height')}
                   onChange={(e) => update({ size: { ...(s.size as { mode: 'exact'; width: number; height: number }), height: num(e.target.value, 16, 20000) } })} />
               </>
             )}
           </div>
-          <label className="mt-1 flex items-center gap-2 text-[11px] text-ink-dim"><input type="checkbox" checked={s.allowUpscale} onChange={(e) => update({ allowUpscale: e.target.checked })} /> Allow enlarging</label>
-          {sizeOf && <div className="mt-1 text-[11px] text-ink-faint">{sizeOf.width} × {sizeOf.height} px</div>}
+          <label className="mt-1 flex items-center gap-2 text-2xs text-ink-dim"><input type="checkbox" checked={s.allowUpscale} onChange={(e) => update({ allowUpscale: e.target.checked })} /> {tr('exportDialog.allow_enlarging')}</label>
+          {sizeOf && <div className="mt-1 text-2xs text-ink-faint">{tr('exportDialog.width_height_px', { width: sizeOf.width, height: sizeOf.height })}</div>}
         </Row>
-        <Row label="Output sharpening">
+        <Row label={tr('exportDialog.output_sharpening')}>
           <div className="flex gap-2">
-            <select className="input" value={s.sharpen.target} onChange={(e) => update({ sharpen: { ...s.sharpen, target: e.target.value as ExportSettings['sharpen']['target'] } })} aria-label="Sharpen for">
-              <option value="none">None</option><option value="screen">Screen</option><option value="matte">Matte paper</option><option value="glossy">Glossy paper</option>
+            <select className="input" value={s.sharpen.target} onChange={(e) => update({ sharpen: { ...s.sharpen, target: e.target.value as ExportSettings['sharpen']['target'] } })} aria-label={tr('exportDialog.sharpen_for')}>
+              <option value="none">{tr('exportDialog.none')}</option><option value="screen">{tr('exportDialog.screen')}</option><option value="matte">{tr('exportDialog.matte_paper')}</option><option value="glossy">{tr('exportDialog.glossy_paper')}</option>
             </select>
             {s.sharpen.target !== 'none' && (
-              <select className="input" value={s.sharpen.amount} onChange={(e) => update({ sharpen: { ...s.sharpen, amount: e.target.value as ExportSettings['sharpen']['amount'] } })} aria-label="Sharpening amount">
-                <option value="low">Low</option><option value="standard">Standard</option><option value="high">High</option>
+              <select className="input" value={s.sharpen.amount} onChange={(e) => update({ sharpen: { ...s.sharpen, amount: e.target.value as ExportSettings['sharpen']['amount'] } })} aria-label={tr('exportDialog.sharpening_amount')}>
+                <option value="low">{tr('exportDialog.low')}</option><option value="standard">{tr('exportDialog.standard')}</option><option value="high">{tr('exportDialog.high')}</option>
               </select>
             )}
           </div>
         </Row>
       </div>
       <div>
-        <Row label="Metadata">
-          <select className="input" aria-label="Metadata" value={s.metadata} disabled={!caps.metadata} onChange={(e) => update({ metadata: e.target.value as MetadataMode })}>
-            <option value="keep">All</option>
-            <option value="stripGps">All except location (GPS)</option>
-            <option value="copyright">Copyright only</option>
-            <option value="strip">None</option>
+        <Row label={tr('exportDialog.metadata')}>
+          <select className="input" aria-label={tr('exportDialog.metadata')} value={s.metadata} disabled={!caps.metadata} onChange={(e) => update({ metadata: e.target.value as MetadataMode })}>
+            <option value="keep">{tr('exportDialog.all')}</option>
+            <option value="stripGps">{tr('exportDialog.all_except_location_gps')}</option>
+            <option value="copyright">{tr('exportDialog.copyright_only')}</option>
+            <option value="strip">{tr('exportDialog.none')}</option>
           </select>
         </Row>
-        <Row label="Author & copyright (EXIF + XMP)">
-          <input className="input mb-1 w-full" placeholder="Author" value={s.author.artist} onChange={(e) => update({ author: { ...s.author, artist: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} />
-          <input className="input w-full" placeholder="© 2026 Your Name" value={s.author.copyright} onChange={(e) => update({ author: { ...s.author, copyright: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} />
+        <Row label={tr('exportDialog.author_copyright_exif_xmp')}>
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 text-2xs text-ink-dim">
+            <label htmlFor="optic-export-author">{tr('exportDialog.author')}</label>
+            <input id="optic-export-author" className="input w-full" autoComplete="name" value={s.author.artist} onChange={(e) => update({ author: { ...s.author, artist: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} />
+            <label htmlFor="optic-export-copyright">{tr('exportDialog.copyright')}</label>
+            <input id="optic-export-copyright" className="input w-full" aria-describedby="optic-export-copyright-hint" value={s.author.copyright} onChange={(e) => update({ author: { ...s.author, copyright: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} />
+            <span />
+            <span id="optic-export-copyright-hint" className="text-ink-faint">{tr('exportDialog.copyright_example', { year: new Date().getFullYear() })}</span>
+          </div>
         </Row>
         {(s.format === 'tiff' || s.format === 'jpeg' || s.format === 'png') && (
-          <Row label="Print resolution">
-            <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="number" className="input w-20" min={36} max={1200} value={s.dpi} onChange={(e) => update({ dpi: num(e.target.value, 36, 1200) })} /> ppi</label>
+          <Row label={tr('exportDialog.print_resolution')}>
+            <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="number" className="input w-20" min={36} max={1200} value={s.dpi} aria-label={tr('exportDialog.print_resolution_in_pixels_per_inch')} onChange={(e) => update({ dpi: num(e.target.value, 36, 1200) })} /> {tr('exportDialog.ppi')}</label>
           </Row>
         )}
-        <Row label="File name">
-          <input className="input w-full font-mono" value={s.fileName} onChange={(e) => update({ fileName: e.target.value })} onKeyDown={(e) => e.stopPropagation()} aria-label="File name template" />
-          <div className="mt-1 text-[10px] leading-snug text-ink-faint">{'{filename} {date:YYYY-MM-DD} {seq:001} {preset} {rating} {camera} {custom} {copy}'}</div>
+        <Row label={tr('exportDialog.file_name')}>
+          <input className="input w-full font-mono" value={s.fileName} onChange={(e) => update({ fileName: e.target.value })} onKeyDown={(e) => e.stopPropagation()} aria-label={tr('exportDialog.file_name_template')} />
+          <div className="mt-1 text-2xs leading-snug text-ink-faint">{tr('exportDialog.filename_date_yyyy_mm_dd_seq')}</div>
         </Row>
-        <Row label="Watermark">
-          <label className="mb-1 flex items-center gap-2 text-xs text-ink-dim"><input type="checkbox" checked={wm.enabled} onChange={(e) => update({ watermark: { ...wm, enabled: e.target.checked } })} /> Add a watermark</label>
+        <Row label={tr('exportDialog.watermark')}>
+          <label className="mb-1 flex items-center gap-2 text-xs text-ink-dim"><input type="checkbox" checked={wm.enabled} onChange={(e) => update({ watermark: { ...wm, enabled: e.target.checked } })} /> {tr('exportDialog.add_a_watermark')}</label>
           {wm.enabled && (
             <div className="space-y-1 text-xs text-ink-dim">
               <div className="flex gap-2">
-                <select className="input" value={wm.kind} onChange={(e) => update({ watermark: { ...wm, kind: e.target.value as 'text' | 'image' } })} aria-label="Watermark type">
-                  <option value="text">Text</option><option value="image">PNG image</option>
+                <select className="input" value={wm.kind} onChange={(e) => update({ watermark: { ...wm, kind: e.target.value as 'text' | 'image' } })} aria-label={tr('exportDialog.watermark_type')}>
+                  <option value="text">{tr('exportDialog.text')}</option><option value="image">{tr('exportDialog.png_image')}</option>
                 </select>
                 {wm.kind === 'text' ? (
-                  <input className="input min-w-0 flex-1" value={wm.text} onChange={(e) => update({ watermark: { ...wm, text: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} aria-label="Watermark text" />
+                  <input className="input min-w-0 flex-1" value={wm.text} onChange={(e) => update({ watermark: { ...wm, text: e.target.value } })} onKeyDown={(e) => e.stopPropagation()} aria-label={tr('exportDialog.watermark_text')} />
                 ) : (
-                  <label className="input flex-1 cursor-pointer truncate">{wm.imageName || 'Choose PNG…'}
+                  <label className="input flex-1 cursor-pointer truncate">{wm.imageName || tr('exportDialog.choose_png')}
                     <input type="file" accept="image/png" className="hidden" onChange={async (e) => {
                       const f = e.target.files?.[0];
                       if (f) update({ watermark: { ...wm, image: new Uint8Array(await f.arrayBuffer()), imageName: f.name } });
@@ -222,22 +232,22 @@ function SettingsForm({ s, update, sample }: { s: ExportSettings; update(p: Part
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <select className="input" value={wm.position} onChange={(e) => update({ watermark: { ...wm, position: e.target.value as typeof wm.position } })} aria-label="Position">
-                  {[['tl', 'Top left'], ['tc', 'Top'], ['tr', 'Top right'], ['cl', 'Left'], ['c', 'Centre'], ['cr', 'Right'], ['bl', 'Bottom left'], ['bc', 'Bottom'], ['br', 'Bottom right']].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                <select className="input" value={wm.position} onChange={(e) => update({ watermark: { ...wm, position: e.target.value as typeof wm.position } })} aria-label={tr('exportDialog.position')}>
+                  {[['tl', tr('exportDialog.top_left')], ['tc', tr('exportDialog.top')], ['tr', tr('exportDialog.top_right')], ['cl', tr('exportDialog.left')], ['c', tr('exportDialog.centre')], ['cr', tr('exportDialog.right')], ['bl', tr('exportDialog.bottom_left')], ['bc', tr('exportDialog.bottom')], ['br', tr('exportDialog.bottom_right')]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
                 {wm.kind === 'text' && (
-                  <select className="input" value={wm.color} onChange={(e) => update({ watermark: { ...wm, color: e.target.value as 'white' | 'black' } })} aria-label="Colour">
-                    <option value="white">White</option><option value="black">Black</option>
+                  <select className="input" value={wm.color} onChange={(e) => update({ watermark: { ...wm, color: e.target.value as 'white' | 'black' } })} aria-label={tr('exportDialog.colour')}>
+                    <option value="white">{tr('exportDialog.white')}</option><option value="black">{tr('exportDialog.black')}</option>
                   </select>
                 )}
               </div>
-              <label className="flex items-center gap-2">Size <input type="range" min={1} max={20} value={wm.size} className="flex-1 accent-[#9a9a9a]" onChange={(e) => update({ watermark: { ...wm, size: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.size}%</span></label>
-              <label className="flex items-center gap-2">Opacity <input type="range" min={5} max={100} value={wm.opacity} className="flex-1 accent-[#9a9a9a]" onChange={(e) => update({ watermark: { ...wm, opacity: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.opacity}%</span></label>
-              <label className="flex items-center gap-2">Margin <input type="range" min={0} max={15} value={wm.margin} className="flex-1 accent-[#9a9a9a]" onChange={(e) => update({ watermark: { ...wm, margin: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.margin}%</span></label>
+              <label className="flex items-center gap-2">{tr('exportDialog.size')} <input type="range" min={1} max={20} value={wm.size} className="flex-1 accent-control" onChange={(e) => update({ watermark: { ...wm, size: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.size}%</span></label>
+              <label className="flex items-center gap-2">{tr('exportDialog.opacity')} <input type="range" min={5} max={100} value={wm.opacity} className="flex-1 accent-control" onChange={(e) => update({ watermark: { ...wm, opacity: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.opacity}%</span></label>
+              <label className="flex items-center gap-2">{tr('exportDialog.margin')} <input type="range" min={0} max={15} value={wm.margin} className="flex-1 accent-control" onChange={(e) => update({ watermark: { ...wm, margin: +e.target.value } })} /><span className="w-8 tabular-nums">{wm.margin}%</span></label>
             </div>
           )}
         </Row>
-        <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="checkbox" checked={s.sidecar} onChange={(e) => update({ sidecar: e.target.checked })} /> Also save the edit as <code className="text-[11px]">.optic.json</code></label>
+        <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="checkbox" checked={s.sidecar} onChange={(e) => update({ sidecar: e.target.checked })} /> {tr('exportDialog.also_save_the_edit_as')} <code className="text-2xs">{tr('exportDialog.optic_json')}</code></label>
       </div>
     </div>
   );
@@ -247,20 +257,22 @@ function PresetBar({ presetId, setPreset, s }: { presetId: string; setPreset(id:
   const presets = useExportPresets();
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
-      <select className="input min-w-0 flex-1" value={presetId} aria-label="Export preset" onChange={(e) => {
+      <select className="input min-w-0 flex-1" value={presetId} aria-label={tr('exportDialog.export_preset')} onChange={(e) => {
         const p = presets.all.find((x) => x.id === e.target.value);
         if (p) setPreset(p.id, structuredClone(p.settings));
       }}>
-        <option value="" disabled>Custom settings</option>
-        <optgroup label="Built-in">{BUILTIN_EXPORT_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
-        {presets.user.length > 0 && <optgroup label="My presets">{presets.user.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
+        <option value="" disabled>{tr('exportDialog.custom_settings')}</option>
+        <optgroup label={tr('exportDialog.built_in')}>{BUILTIN_EXPORT_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
+        {presets.user.length > 0 && <optgroup label={tr('exportDialog.my_presets')}>{presets.user.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
       </select>
-      <button className="rounded border border-line px-2 py-1 text-[11px] hover:bg-hover" onClick={async () => {
-        const name = prompt('Name of the export preset');
-        if (name?.trim()) { const p = await presets.save(name.trim(), s); setPreset(p.id, s); }
-      }}>Save preset…</button>
+      <button className="rounded border border-line px-2 py-1 text-2xs hover:bg-hover" onClick={async () => {
+        const name = await promptDialog({ title: tr('exportDialog.save_export_preset'), label: tr('exportDialog.preset_name'), confirmLabel: tr('exportDialog.save_preset') });
+        if (name) { const p = await presets.save(name, s); setPreset(p.id, s); }
+      }}>{tr('exportDialog.save_preset_2')}</button>
       {presets.user.some((p) => p.id === presetId) && (
-        <button className="rounded px-2 py-1 text-[11px] text-ink-faint hover:text-[#e07070]" onClick={() => { if (confirm('Delete this export preset?')) void presets.remove(presetId).then(() => setPreset('', s)); }}>Delete</button>
+        <button className="rounded px-2 py-1 text-2xs text-ink-faint hover:text-danger" onClick={async () => {
+          if (await confirmDialog({ title: tr('exportDialog.delete_this_export_preset'), confirmLabel: tr('exportDialog.delete_preset'), danger: true })) void presets.remove(presetId).then(() => setPreset('', s));
+        }}>{tr('exportDialog.delete')}</button>
       )}
     </div>
   );
@@ -329,13 +341,13 @@ function SingleDialog({ image }: { image: LoadedImage }) {
     useEdit.getState().commit();
     const recipeNow = useEdit.getState().recipe;
     const controller = new AbortController();
-    useExportJob.getState().set({ running: true, fraction: 0, label: 'Starting', error: null, controller });
+    useExportJob.getState().set({ running: true, fraction: 0, label: tr('exportDialog.starting'), error: null, controller });
     close();
     const t0 = performance.now();
     try {
       await runExport(image, recipeNow, s, handle, (fraction, label) => useExportJob.getState().set({ fraction, label }), controller.signal, name);
       console.info(`[optic] exported ${name} in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
-      useExportJob.getState().set({ running: false, label: 'Saved', controller: null });
+      useExportJob.getState().set({ running: false, label: tr('exportDialog.saved'), controller: null });
       setTimeout(() => !useExportJob.getState().running && useExportJob.getState().set({ label: '' }), 3000);
     } catch (e) {
       const err = e as Error;
@@ -346,15 +358,15 @@ function SingleDialog({ image }: { image: LoadedImage }) {
   };
 
   return (
-    <Shell title="Export" onClose={close}>
+    <Shell title={tr('exportDialog.export')} onClose={close}>
       <PresetBar presetId={state.presetId} s={s} setPreset={(id, settings) => setState({ s: settings, presetId: id })} />
       <SettingsForm s={s} update={update} sample={{ w: out.outW, h: out.outH }} />
-      <div className="mt-2 truncate text-[11px] text-ink-faint" title={name}>{name}</div>
-      {job.error && <div className="mt-2 text-xs text-[#e07070]">Last export failed: {job.error}</div>}
+      <div className="mt-2 truncate text-2xs text-ink-faint" title={name}>{name}</div>
+      {job.error && <div className="mt-2 text-xs text-danger">{tr('exportDialog.last_export_failed_error', { error: job.error })}</div>}
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>{tr('exportDialog.cancel')}</button>
         <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40" disabled={job.running} onClick={() => void start()}>
-          {job.running ? 'Export running…' : 'Export'}
+          {job.running ? tr('exportDialog.export_running') : tr('exportDialog.export')}
         </button>
       </div>
     </Shell>
@@ -400,25 +412,24 @@ function BatchDialog() {
     await startExportJob(ids, s, { presetName, custom, folder, zipName });
   };
   return (
-    <Shell title={`Export ${ids.length} photo${ids.length === 1 ? '' : 's'}`} onClose={close}>
+    <Shell title={tp('exportDialog.export_photos', ids.length)} onClose={close}>
       <PresetBar presetId={state.presetId} s={s} setPreset={(id, settings) => setState({ s: settings, presetId: id })} />
       <SettingsForm s={s} update={update} sample={first && first.width ? { w: first.width, h: first.height } : undefined} />
       <div className="mt-1 grid gap-x-6 md:grid-cols-2">
-        <Row label="Destination">
+        <Row label={tr('exportDialog.destination')}>
           <label className={`flex items-center gap-2 text-xs ${'showDirectoryPicker' in window ? 'text-ink-dim' : 'text-ink-faint'}`}>
-            <input type="radio" name="dest" checked={dest === 'folder'} disabled={!('showDirectoryPicker' in window)} onChange={() => setDest('folder')} /> Save into a folder…
-          </label>
-          <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="radio" name="dest" checked={dest === 'zip'} onChange={() => setDest('zip')} /> Download as a ZIP (streamed; any size)</label>
+            <input type="radio" name="dest" checked={dest === 'folder'} disabled={!('showDirectoryPicker' in window)} onChange={() => setDest('folder')} /> {tr('exportDialog.save_into_a_folder')}</label>
+          <label className="flex items-center gap-2 text-xs text-ink-dim"><input type="radio" name="dest" checked={dest === 'zip'} onChange={() => setDest('zip')} /> {tr('exportDialog.download_as_a_zip_streamed_any')}</label>
         </Row>
-        <Row label="{custom} text">
-          <input className="input w-full" value={custom} onChange={(e) => setCustom(e.target.value)} onKeyDown={(e) => e.stopPropagation()} aria-label="Custom text for the file name" />
+        <Row label={tr('exportDialog.custom_text')}>
+          <input className="input w-full" value={custom} onChange={(e) => setCustom(e.target.value)} onKeyDown={(e) => e.stopPropagation()} aria-label={tr('exportDialog.custom_text_for_the_file_name')} />
         </Row>
       </div>
-      {sampleName && <div className="truncate text-[11px] text-ink-faint">First file: {sampleName}</div>}
+      {sampleName && <div className="truncate text-2xs text-ink-faint">{tr('exportDialog.first_file_samplename', { sampleName: sampleName })}</div>}
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>{tr('exportDialog.cancel')}</button>
         <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40" disabled={running || !ids.length} onClick={() => void start()}>
-          {running ? 'An export is running…' : `Export ${ids.length}`}
+          {running ? tr('exportDialog.an_export_is_running') : tr('exportDialog.export_n', { n: ids.length })}
         </button>
       </div>
     </Shell>
@@ -445,43 +456,43 @@ export function ExportQueuePanel() {
   const e = eta(job);
   const fraction = (done.length + failed.length + (current?.fraction ?? 0)) / Math.max(1, job.items.length);
   return (
-    <div className="fixed bottom-3 right-3 z-40 flex max-h-[70vh] w-[380px] max-w-[calc(100vw-24px)] flex-col rounded-lg border border-line bg-panel text-xs text-ink shadow-2xl" role="region" aria-label="Export queue">
+    <div className="fixed bottom-3 end-3 z-40 flex max-h-[70vh] w-[380px] max-w-[calc(100vw-24px)] flex-col rounded-lg border border-line bg-panel text-xs text-ink shadow-2xl" role="region" aria-label={tr('exportDialog.export_queue')}>
       <div className="flex items-center gap-2 border-b border-line px-3 py-2">
         <span className="font-medium">
-          {job.status === 'done' ? 'Export finished' : job.status === 'cancelled' ? 'Export cancelled' : job.status === 'interrupted' ? 'Export interrupted' : job.status === 'paused' ? 'Export paused' : 'Exporting'}
+          {job.status === 'done' ? tr('exportDialog.export_finished') : job.status === 'cancelled' ? tr('exportDialog.export_cancelled') : job.status === 'interrupted' ? tr('exportDialog.export_interrupted') : job.status === 'paused' ? tr('exportDialog.export_paused') : tr('exportDialog.exporting')}
         </span>
         <span className="text-ink-faint">{done.length}/{job.items.length}</span>
         <div className="flex-1" />
-        <button className="text-ink-faint hover:text-ink" aria-label="Hide export panel" onClick={() => useExportQueue.getState().set({ panelOpen: false })}>—</button>
+        <IconButton className="text-ink-faint hover:text-ink" label={tr('exportDialog.hide_the_export_panel_the_export')} onClick={() => useExportQueue.getState().set({ panelOpen: false })}>—</IconButton>
       </div>
       <div className="px-3 py-2">
         <div className="mb-1 h-1.5 overflow-hidden rounded bg-hover" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}>
           <div className="h-full bg-meter transition-[width]" style={{ width: `${fraction * 100}%` }} />
         </div>
-        <div className="flex justify-between text-[11px] text-ink-dim">
-          <span className="truncate">{job.status === 'running' ? current?.label ?? 'Starting…' : `${done.length} exported · ${fmtBytes(total)}${failed.length ? ` · ${failed.length} failed` : ''}`}</span>
-          {job.status === 'running' && e !== null && <span className="ml-2 shrink-0">~{fmtTime(e)} left</span>}
+        <div className="flex justify-between text-2xs text-ink-dim">
+          <span className="truncate">{job.status === 'running' ? current?.label ?? tr('exportDialog.starting') : `${done.length} exported · ${fmtBytes(total)}${failed.length ? ` · ${failed.length} failed` : ''}`}</span>
+          {job.status === 'running' && e !== null && <span className="ms-2 shrink-0">{tr('exportDialog.time_left', { time: fmtTime(e) })}</span>}
         </div>
-        <div className="mt-1 text-[11px] text-ink-faint">{job.destination === 'folder' ? `To folder “${job.folderName ?? ''}”` : 'ZIP download when finished'}{job.presetName ? ` · ${job.presetName}` : ''}</div>
+        <div className="mt-1 text-2xs text-ink-faint">{job.destination === 'folder' ? `To folder “${job.folderName ?? ''}”` : tr('exportDialog.zip_download_when_finished')}{job.presetName ? ` · ${job.presetName}` : ''}</div>
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto border-t border-line px-3 py-1" aria-label="Photos">
+      <ul className="min-h-0 flex-1 overflow-y-auto border-t border-line px-3 py-1" aria-label={tr('exportDialog.photos')}>
         {job.items.map((i) => (
-          <li key={i.photoId} className="flex items-center gap-2 py-0.5 text-[11px]">
-            <span className={`w-3 text-center ${i.state === 'done' ? 'text-[#7fc77f]' : i.state === 'failed' ? 'text-[#e07070]' : 'text-ink-faint'}`} aria-hidden>
+          <li key={i.photoId} className="flex items-center gap-2 py-0.5 text-2xs">
+            <span className={`w-3 text-center ${i.state === 'done' ? 'text-success' : i.state === 'failed' ? 'text-danger' : 'text-ink-faint'}`} aria-hidden>
               {i.state === 'done' ? '✓' : i.state === 'failed' ? '!' : i.state === 'running' ? '…' : i.state === 'cancelled' ? '–' : '·'}
             </span>
             <span className="min-w-0 flex-1 truncate" title={i.error ?? i.outName ?? i.fileName}>{i.outName ?? i.fileName}</span>
             {i.bytes ? <span className="text-ink-faint">{fmtBytes(i.bytes)}</span> : null}
-            {i.error && <span className="max-w-[140px] truncate text-[#e07070]" title={i.error}>{i.error}</span>}
+            {i.error && <span className="max-w-[140px] truncate text-danger" title={i.error}>{i.error}</span>}
           </li>
         ))}
       </ul>
       <div className="flex flex-wrap justify-end gap-2 border-t border-line px-3 py-2">
-        {job.status === 'running' && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={pauseExport}>Pause</button>}
-        {(job.status === 'paused' || job.status === 'interrupted') && left > 0 && <button className="rounded bg-accent px-2 py-1 font-medium text-on-accent hover:bg-accent-hi" onClick={() => void resumeExport()}>Resume</button>}
-        {(job.status === 'running' || job.status === 'paused' || job.status === 'interrupted') && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={cancelExport}>Cancel</button>}
-        {(job.status === 'done' || job.status === 'cancelled') && failed.length > 0 && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={retryFailed}>Retry failed</button>}
-        {(job.status === 'done' || job.status === 'cancelled' || job.status === 'interrupted') && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={dismissExport}>Close</button>}
+        {job.status === 'running' && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={pauseExport}>{tr('exportDialog.pause')}</button>}
+        {(job.status === 'paused' || job.status === 'interrupted') && left > 0 && <button className="rounded bg-accent px-2 py-1 font-medium text-on-accent hover:bg-accent-hi" onClick={() => void resumeExport()}>{tr('exportDialog.resume')}</button>}
+        {(job.status === 'running' || job.status === 'paused' || job.status === 'interrupted') && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={cancelExport}>{tr('exportDialog.cancel')}</button>}
+        {(job.status === 'done' || job.status === 'cancelled') && failed.length > 0 && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={retryFailed}>{tr('exportDialog.retry_failed')}</button>}
+        {(job.status === 'done' || job.status === 'cancelled' || job.status === 'interrupted') && <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={dismissExport}>{tr('exportDialog.close')}</button>}
       </div>
     </div>
   );

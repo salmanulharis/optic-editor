@@ -30,6 +30,7 @@ npm run bench          # 48 MP synthetic: preview fps while dragging (incl. 16 m
 npm run lensfun:subset # regenerate src/io/lens/lensfun-subset.json from the lensfun database
 npm run models:fetch   # optional: AI models into public/models (gitignored) for self-hosting
 npm run icons          # PWA icons + Apple splash screens from public/icons/optic.svg
+npm run sample:fetch   # optional: CC0 sample RAW for "Try a sample photo" (public/samples, gitignored)
 ```
 
 `test:seams` and `bench` start Vite programmatically and drive `bench.html` (dev-only page, `src/bench/`) in headless Chrome/Edge via `playwright-core`. Set `CHROME_PATH` or `CHROME_CHANNEL` to choose the browser.
@@ -206,12 +207,29 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - on iOS: proxy ≤ 2560, export tiles 512
 - **Settings** (`state/settingsStore.ts`, localStorage): theme, defaults for new photos, preview quality, default export preset.
   - Themes use CSS-variable tokens (`index.css`, `tailwind.config.js`): use `bg-panel`, `text-ink`, `bg-hover`, …, not hex.
-  - i18n lives in `src/i18n/` (English).
+  - **i18n** (`src/i18n/`): every interface string is a key in `en.ts`. The rules are enforced by `tests/unit/i18n.test.ts`: every key used is defined, every key defined is used, and placeholders are balanced.
+    - Components use `t` (imported as `tr` in most UI files) with `{name}` placeholders.
+    - Plurals use `tp('key', n, vars)` (`i18n/format.ts`, Intl.PluralRules) with `key.one` / `key.other`.
+    - Never assemble a sentence from fragments: write one message with placeholders.
+    - Stored data stays untranslated: preset names, history step labels, the default "Original" version name, mask names.
+    - Line endings are LF everywhere (`.gitattributes`); scripts that append keys insert before the final `};` of `en.ts`.
+    - A language change reloads the app, because some lists (SORTS, shortcuts) are built at module load. `LANGUAGES` entries carry `dir`, and `theme.ts` sets `<html lang dir>`.
+    - Development builds add two test languages (`i18n/pseudo.ts`): `en-XA` (+40 % accented text, to catch untranslated or clipped text) and `ar-XB` (right to left).
+  - **Right to left**: use logical classes (`ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`, `border-s`/`border-e`, `text-start`/`text-end`), never `ml-`/`mr-`/`left-`/`right-` in UI chrome. Value scales and the canvas keep `dir="ltr"`: Slider track, ColorWheel, Histogram, Viewer, Grid, and the filmstrip strip.
+  - **Feedback**: use `toast()` / `toastError()` (`ui/feedback/toasts.ts`, with an optional Undo action) and `confirmDialog` / `promptDialog` / `messageDialog` (`ui/feedback/dialogs.tsx`). Never `window.alert` / `confirm` / `prompt` (enforced by `tests/unit/ui-rules.test.ts`). Reversible actions get Undo, not a question.
+  - **Controls**: icon-only buttons use `IconButton` (accessible name, tooltip on hover / focus / long press, `.hit` target of at least 24 px, 44 px on touch). Text is at least `text-2xs` (11 px). Colours come from theme tokens only, except overlays drawn on the photo (`ui/canvas/`, thumbnail badges). `tests/unit/contrast.test.ts` checks every token pair in all three themes.
+  - **Layout**: below 1024 px the Presets / History column is a `Drawer`; F (`uiStore.panelsHidden`, remembered under `optic.ui`) hides both side panels; below 1280 px Open, Batch, Settings and Help move to the top bar's ⋯ menu. `SectionGroup` provides "one section at a time".
   - The shortcut list is `app/shortcuts.ts`; keep it in step with `keyboard.ts`.
   - Modal dialogs use `useFocusTrap` (`ui/focusTrap.ts`) and `aria-modal="true"`; the shared `Modal` (`ui/presets/Dialogs.tsx`) already does both. The hook reads the opener during render, because `autoFocus` runs before effects.
   - Rarely opened UI is lazy-loaded in `App.tsx` (`LazyDialogs`: export, settings, shortcuts, tour), and each dialog mounts only while open. Keep always-visible pieces out of those modules: the export progress pill lives in `ExportProgress.tsx` for this reason.
   - exifr is loaded on demand (`decodeClient`, `exportClient`, `InfoPanel`). Main-thread code must not import `library/fileInfo.ts`; the preview sizes live in `library/previewSizes.ts`.
-  - `vite.config.ts` `manualChunks` splits out `react`, `dexie` and `presets-builtin`. The main chunk is about 470 kB; keep it under Vite's 500 kB warning.
+- **Engines without OffscreenCanvas or OPFS** (older Safari, Playwright WebKit on Windows):
+  - Make 2D canvases with `createCanvas` / `context2d` / `canvasToBlob` (`io/canvas.ts`), never `new OffscreenCanvas` directly. They fall back to a DOM canvas on the main thread.
+  - WebP / AVIF decode on the main thread through `io/decode/imageDecode.ts` when workers have no canvas. Keep HEIC out of that module: libheif must stay in the worker bundle.
+  - Export renders on the main thread when the worker can't draw (`canDrawHere`); the watermark is drawn there and passed as `watermarkMark`.
+  - `library/opfs.ts` keeps files in memory without OPFS, and `library/sessionFiles.ts` holds picked or dropped originals for the session.
+  - WebKit gets `preserveDrawingBuffer` on the viewer canvas (`gl/context.ts`): offscreen draws on the viewer's context (thumbnails, auto tools, readout) otherwise blank the shown frame.
+  - `vite.config.ts` `manualChunks` splits out `react`, `dexie`, `presets-builtin` and `messages-en`. The main chunk is about 490 kB; keep it under Vite's 500 kB warning.
 
 ### Presets (`src/presets/`, `src/state/presetStore.ts`)
 - Built-ins are JSON files in `src/presets/builtin/<category>/` (`bw`, `cinematic`, `film`, `hasselblad`, `leica`, `zeiss`; browser categories ordered by `BUILTIN_GROUP_ORDER`, not the recipe `PRESET_GROUPS`), format version 3 (version 2 files load unchanged), loaded with `import.meta.glob` in `builtin/index.ts`. They are the source of truth: edit them directly. Adding a file ships a new built-in. User presets and imported LUTs live in IndexedDB (`src/storage/db.ts`), and `.opticpack` is a plain zip (`src/storage/zip.ts`).
@@ -239,7 +257,7 @@ Preview, export, histogram, thumbnails and auto tools pick up the stage automati
 
 ## Known gaps
 
-- The Safari / iPhone / iPad paths (touch layout, OPFS sync handles, share target, iOS memory caps, 48 MP tiled export) were built but only tested in desktop Chromium with mobile emulation.
+- The Safari / iPhone / iPad paths (touch layout, OPFS sync handles, share target, iOS memory caps, 48 MP tiled export) were built but only tested in desktop Chromium with mobile emulation. An import → edit → export smoke test passes in Playwright's WebKit (Windows build: no OPFS, no OffscreenCanvas) and in Firefox, but neither is part of `npm run test:e2e`.
 - The sky model marks large, pale, smooth areas (indoor walls) as sky. Background previews of photos that are not open use cached AI bitmaps only (no inference).
 - Preview with 16 masks: dragging a mask slider holds 60 fps; global drags with many masks drop to about 20–40 fps on an Intel UHD 730 (draft frames help).
 

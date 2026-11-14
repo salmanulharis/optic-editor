@@ -18,6 +18,8 @@ import { catalog } from './db';
 import { decodePhoto } from './decode';
 import { readFile, removeEntry, truncateFile } from './opfs';
 import { ensureDoc, mainRecipe, pausePreviews } from './previews';
+import { toast, toastError } from '../ui/feedback/toasts';
+import { t } from '../i18n';
 
 export type ItemState = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
 
@@ -114,13 +116,13 @@ export async function resumeExport() {
   if (job.destination === 'folder' && job.folder) {
     const h = job.folder as FileSystemDirectoryHandle & { requestPermission?(o: unknown): Promise<string> };
     const p = (await h.requestPermission?.({ mode: 'readwrite' })) ?? 'granted';
-    if (p !== 'granted') { alert('Optic needs permission to write to the export folder.'); return; }
+    if (p !== 'granted') { toastError(t('exportQueue.permission')); return; }
   }
   // A reload may have stopped in the middle of a ZIP entry: cut the file back to the last
   // complete entry (the saved state) before appending again.
   if (job.destination === 'zip' && job.zip) {
     const f = await readFile(job.zip.path);
-    if (!f) { alert('The partial ZIP is gone; the export starts over.'); job.zip = { path: job.zip.path, size: 0, entries: [] }; job.items = job.items.map((i) => ({ ...i, state: 'pending' })); }
+    if (!f) { toast(t('exportQueue.zipRestarted')); job.zip = { path: job.zip.path, size: 0, entries: [] }; job.items = job.items.map((i) => ({ ...i, state: 'pending' })); }
     else if (f.size !== job.zip.size) await truncateFile(job.zip.path, job.zip.size);
   }
   setJob({ ...job, status: 'running' });
@@ -213,7 +215,7 @@ async function run() {
     job = useExportQueue.getState().job!;
     if (job && job.status === 'running') {
       if (job.destination === 'zip' && job.zip && job.zip.entries.length) {
-        useExportQueue.getState().set({ current: { label: 'Finishing ZIP', fraction: 1 } });
+        useExportQueue.getState().set({ current: { label: t('exportQueue.finishingZip'), fraction: 1 } });
         await zipFinish(job.zip);
         const f = await readFile(job.zip.path);
         if (f) downloadBlob(f, job.zipName ?? 'optic-export.zip');

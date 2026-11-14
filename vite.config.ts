@@ -7,9 +7,12 @@ import { VitePWA } from 'vite-plugin-pwa';
 // LibRaw-WASM is built with pthreads (SharedArrayBuffer), and the decoded image is shared
 // between the UI and the export worker through a SharedArrayBuffer. Both require the page to be
 // cross-origin isolated, hence the COOP/COEP headers on dev and preview servers.
+// Same headers as the deployments (public/_headers, vercel.json, README → nginx). WebKit also wants
+// CORP on same-origin worker scripts before it starts them under COEP.
 const isolationHeaders = {
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Cross-Origin-Embedder-Policy': 'require-corp',
+  'Cross-Origin-Resource-Policy': 'same-origin',
 };
 
 /**
@@ -130,6 +133,8 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) return 'dexie';
           // The 64 built-in preset JSON files: data, versioned separately from the code.
           if (/[\\/]src[\\/]presets[\\/]builtin[\\/].+\.json$/.test(id)) return 'presets-builtin';
+          // Interface messages (src/i18n/en.ts): data, versioned separately from the code.
+          if (/[\\/]src[\\/]i18n[\\/]en\.ts$/.test(id)) return 'messages-en';
           return undefined;
         },
       },

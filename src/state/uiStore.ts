@@ -1,6 +1,7 @@
 /** Transient UI state: view transform, tools, overlays, readouts. Never part of the recipe. */
 import { create } from 'zustand';
 import type { PresetGroup, Recipe } from '../recipe/schema';
+import { lsGet, lsSet } from '../storage/db';
 
 export type Tool = 'none' | 'wb' | 'blackPoint' | 'whitePoint' | 'pointColor' | 'straighten' | 'guide';
 export type CurveChannel = 'rgb' | 'r' | 'g' | 'b';
@@ -67,6 +68,12 @@ interface UiState {
   /** Bumped when a background analysis (noise, lens profile, CA) changes the render inputs. */
   analysisTick: number;
   leftTab: 'presets' | 'history';
+  /** Side panels hidden in the editor (key F); remembered across sessions. */
+  panelsHidden: boolean;
+  /** Adjustments column: opening a section closes the others; remembered across sessions. */
+  soloSections: boolean;
+  /** Presets / History drawer open (desktop layout narrower than 1024 px). */
+  presetsDrawer: boolean;
   /** Crop & straighten tool open (key R): the canvas shows the whole frame with the crop overlay. */
   cropMode: boolean;
   cropGuide: CropGuide;
@@ -104,6 +111,9 @@ interface UiState {
   set(p: Partial<UiState>): void;
 }
 
+/** Layout preferences kept between sessions (not part of Settings: they change with a keystroke). */
+const UI_PREFS_KEY = 'optic.ui';
+
 export const useUi = create<UiState>((set) => ({
   zoom: 'fit',
   center: { x: 0, y: 0 },
@@ -130,6 +140,9 @@ export const useUi = create<UiState>((set) => ({
   clipboard: null,
   analysisTick: 0,
   leftTab: 'presets',
+  panelsHidden: lsGet<{ panelsHidden?: boolean }>(UI_PREFS_KEY, {}).panelsHidden === true,
+  soloSections: lsGet<{ soloSections?: boolean }>(UI_PREFS_KEY, {}).soloSections === true,
+  presetsDrawer: false,
   cropMode: false,
   cropGuide: 'thirds',
   compareMode: 'off',
@@ -155,3 +168,9 @@ export const useUi = create<UiState>((set) => ({
   maskPick: false,
   set: (p) => set(p),
 }));
+
+useUi.subscribe((s, p) => {
+  if (s.panelsHidden !== p.panelsHidden || s.soloSections !== p.soloSections) {
+    lsSet(UI_PREFS_KEY, { panelsHidden: s.panelsHidden, soloSections: s.soloSections });
+  }
+});

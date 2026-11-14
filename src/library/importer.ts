@@ -13,6 +13,7 @@ import { catalog } from './db';
 import { importPoolSize, importWorker } from '../app/analysisClient';
 import { opfsAvailable, writeFile } from './opfs';
 import { enqueuePreviews } from './previews';
+import { rememberSessionFile } from './sessionFiles';
 
 const EXTS = new Set(ACCEPT.split(',').map((e) => e.slice(1).toLowerCase()));
 export const isSupported = (name: string) => EXTS.has(name.split('.').pop()?.toLowerCase() ?? '');
@@ -288,12 +289,19 @@ async function importOne(job: Job, opts: ImportOptions): Promise<string | null> 
   const hash = job.hash ?? (await importWorker().hash(job.file));
   if (opts.skipDuplicates) {
     const existing = await catalog.photos.where('hash').equals(hash).first();
-    if (existing) { dupHit = true; return existing.id; }
+    if (existing) {
+      // A photo whose original this browser couldn't keep becomes usable again for this session.
+      if (existing.storage !== 'opfs' && !existing.handle) rememberSessionFile(existing.id, job.file);
+      dupHit = true;
+      return existing.id;
+    }
   }
   const { facts, preview: quick } = await importWorker().analyse(job.file, true);
   const id = crypto.randomUUID();
   const now = Date.now();
   let opfsPath: string | undefined;
+  // Nothing durable to keep (no OPFS, no handle): the file stays usable for this session.
+  if (opts.mode !== 'copy' && !job.handle) rememberSessionFile(id, job.file);
   if (opts.mode === 'copy') {
     opfsPath = `originals/${id}/${job.file.name}`;
     await writeFile(opfsPath, job.file);

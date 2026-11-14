@@ -24,6 +24,18 @@
   --c-accent-hi: 255 255 255;
   --c-on-accent: 0 0 0;
   --c-meter: 187 187 187;
+  --c-danger: 232 128 128;
+  --c-danger-bg: 74 38 38;
+  --c-warn: 224 180 74;
+  --c-star: 232 200 96;
+  --c-control: 154 154 154;
+  --c-hist-bg: 32 32 32;
+  --c-success: 127 199 127;
+  --c-success-bg: 52 70 52;
+  --c-info: 159 180 200;
+  --c-info-bg: 44 58 74;
+  --c-thumb: 207 207 207;
+  --c-thumb-edge: 28 28 28;
 }
 
 :root[data-theme='darker'] {
@@ -34,6 +46,7 @@
   --c-sunk: 16 16 16;
   --c-hover: 38 38 38;
   --c-active: 46 46 46;
+  --c-hist-bg: 18 18 18;
 }
 
 :root[data-theme='light'] {
@@ -43,7 +56,7 @@
   --c-line: 172 172 172;
   --c-ink: 24 24 24;
   --c-ink-dim: 52 52 52;
-  --c-ink-faint: 72 72 72;
+  --c-ink-faint: 60 60 60; /* ≥ 4.5:1 on the light canvas grey (168) too */
   --c-strong: 0 0 0;
   --c-raise: 224 224 224;
   --c-sunk: 186 186 186;
@@ -54,6 +67,18 @@
   --c-accent-hi: 0 0 0;
   --c-on-accent: 255 255 255;
   --c-meter: 64 64 64;
+  --c-danger: 150 32 32;
+  --c-danger-bg: 236 200 200;
+  --c-warn: 110 76 0;
+  --c-star: 140 100 0;
+  --c-control: 72 72 72;
+  --c-hist-bg: 196 196 196;
+  --c-success: 28 100 28;
+  --c-success-bg: 196 222 196;
+  --c-info: 36 64 104;
+  --c-info-bg: 196 210 228;
+  --c-thumb: 248 248 248;
+  --c-thumb-edge: 80 80 80;
 }
 
 html,
@@ -70,9 +95,30 @@ body,
 }
 
 @layer components {
+  /* Minimum hit area for small controls: 24 px (WCAG 2.5.8), 44 px on touch screens. The visible
+     icon keeps its size; the extra area is padding. */
+  .hit {
+    @apply inline-flex items-center justify-center;
+    min-width: 24px;
+    min-height: 24px;
+  }
+  @media (pointer: coarse) {
+    .hit {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
   .input {
     @apply rounded border border-line bg-raise px-1.5 py-1 text-xs text-ink outline-none focus:border-edge;
   }
+}
+
+/* Checkboxes and radio buttons: a 16 px box; with the spacing around them this meets the 24 px
+   target size of WCAG 2.5.8. */
+input[type='checkbox'],
+input[type='radio'] {
+  width: 16px;
+  height: 16px;
 }
 
 /* Visible focus for keyboard users everywhere (mouse clicks don't show it). */

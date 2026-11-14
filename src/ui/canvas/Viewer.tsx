@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * The image viewer. Rendering is driven by store subscriptions + requestAnimationFrame (no React
  * re-render per slider tick, no debounce): any recipe/view change marks the frame dirty and the
@@ -458,20 +459,19 @@ export function Viewer() {
 
   const cursor = tool !== 'none' ? 'crosshair' : image ? 'grab' : 'default';
   const toolHint: Record<string, string> = {
-    wb: 'Click a neutral grey or white area',
-    blackPoint: 'Click the darkest point',
-    whitePoint: 'Click the brightest point',
-    pointColor: 'Click the colour to adjust',
-    straighten: 'Drag along a line that should be level (or vertical)',
-    guide: 'Drag along a line that should be vertical or horizontal (2–4 lines)',
+    wb: tr('viewer.click_a_neutral_grey_or_white'),
+    blackPoint: tr('viewer.click_the_darkest_point'),
+    whitePoint: tr('viewer.click_the_brightest_point'),
+    pointColor: tr('viewer.click_the_colour_to_adjust'),
+    straighten: tr('viewer.drag_along_a_line_that_should'),
+    guide: tr('viewer.drag_along_a_line_that_should_2'),
   };
 
   return (
-    <div ref={wrapRef} className="relative h-full w-full overflow-hidden bg-app">
+    <div ref={wrapRef} dir="ltr" className="relative h-full w-full overflow-hidden bg-app">
       <canvas ref={canvasRef} className="block h-full w-full touch-none" style={{ cursor }} />
       {glError && (
-        <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-sm text-ink-dim">
-          WebGL2 with float render targets is required. {glError}
+        <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-sm text-ink-dim">{tr('viewer.webgl_required', { glError })}
         </div>
       )}
       {image && !cropMode && <GridOverlay box={box} />}
@@ -481,12 +481,12 @@ export function Viewer() {
       {image && (tool === 'straighten' || tool === 'guide') && <LineToolOverlay box={box} />}
       {image && compareMode !== 'off' && !cropMode && <CompareOverlay box={box} />}
       {image && detailDrag && nrOrSharpen && zoom === 'fit' && (
-        <div className="pointer-events-none absolute left-1/2 top-12 -translate-x-1/2 rounded bg-black/60 px-3 py-1 text-xs text-ink">
-          Zoom to 100% to judge sharpening and noise
-        </div>
+        <div className="pointer-events-none absolute left-1/2 top-12 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-xs text-white">{tr('viewer.zoom_to_100_to_judge_sharpening')}</div>
       )}
-      {image && (
-        <div className="pointer-events-none absolute bottom-2 left-2 flex gap-3 rounded bg-black/50 px-2 py-1 text-[11px] tabular-nums text-ink-dim">
+      {/* Readout / frame rate on the photo: light text on a dark chip in every theme; nothing at all
+          when there is nothing to show. */}
+      {image && (readout || (showFps && fps > 0)) && (
+        <div className="pointer-events-none absolute bottom-2 left-2 flex gap-3 rounded bg-black/70 px-2 py-1 text-2xs tabular-nums text-white/90">
           {readout ? (
             <>
               <span>{readout.x}, {readout.y}</span>
@@ -498,14 +498,13 @@ export function Viewer() {
               </span>
             </>
           ) : (
-            <span>{fps && showFps ? `${fps} fps` : ' '}</span>
+            <span>{tr('viewer.fps', { fps })}</span>
           )}
         </div>
       )}
       {tool !== 'none' && (
-        <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/60 px-3 py-1 text-xs text-ink">
-          {toolHint[tool]} · Esc to cancel
-        </div>
+        <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-xs text-white">
+          {toolHint[tool]} {tr('viewer.esc_to_cancel')}</div>
       )}
     </div>
   );

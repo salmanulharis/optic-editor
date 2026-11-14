@@ -1,24 +1,14 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { t as tr } from '../../i18n';
+import { useState } from 'react';
 import { copySettings, pasteSettings, presetFromRecipe } from '../../app/presetActions';
-import { GROUP_LABELS, PHOTO_SPECIFIC_GROUPS, PRESET_GROUPS, type PresetGroup } from '../../recipe/schema';
+import { PHOTO_SPECIFIC_GROUPS, PRESET_GROUPS, type PresetGroup } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
 import { usePresets } from '../../state/presetStore';
 import { useUi } from '../../state/uiStore';
-import { useFocusTrap } from '../focusTrap';
 
-export function Modal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useFocusTrap(ref, true);
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-lg border border-line bg-panel p-4 text-ink shadow-2xl"
-        onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') onClose(); }}>
-        <h2 className="mb-3 text-sm font-medium">{title}</h2>
-        {children}
-      </div>
-    </div>
-  );
-}
+/** The shared modal shell (moved to controls/Modal.tsx; re-exported for existing imports). */
+import { Modal } from '../controls/Modal';
+export { Modal };
 
 export function GroupChecklist({ value, onChange, enabled }: { value: PresetGroup[]; onChange(v: PresetGroup[]): void; enabled?: PresetGroup[] }) {
   return (
@@ -27,15 +17,15 @@ export function GroupChecklist({ value, onChange, enabled }: { value: PresetGrou
         const disabled = enabled ? !enabled.includes(g) : false;
         return (
           <label key={g} className={`flex items-center gap-2 text-xs ${disabled ? 'text-ink-faint' : 'text-ink-dim'}`}>
-            <input type="checkbox" className="accent-[#9a9a9a]" disabled={disabled} checked={value.includes(g) && !disabled}
+            <input type="checkbox" className="accent-control" disabled={disabled} checked={value.includes(g) && !disabled}
               onChange={(e) => onChange(e.target.checked ? [...value, g] : value.filter((x) => x !== g))} />
-            {GROUP_LABELS[g]}
+            {tr(`groups.${g}`)}
           </label>
         );
       })}
-      <div className="mt-1 flex gap-2 text-[11px]">
-        <button className="text-ink-faint hover:text-ink" onClick={() => onChange(PRESET_GROUPS.filter((g) => !enabled || enabled.includes(g)))}>All</button>
-        <button className="text-ink-faint hover:text-ink" onClick={() => onChange([])}>None</button>
+      <div className="mt-1 flex gap-2 text-2xs">
+        <button className="text-ink-faint hover:text-ink" onClick={() => onChange(PRESET_GROUPS.filter((g) => !enabled || enabled.includes(g)))}>{tr('dialogs.all')}</button>
+        <button className="text-ink-faint hover:text-ink" onClick={() => onChange([])}>{tr('dialogs.none')}</button>
       </div>
     </div>
   );
@@ -61,22 +51,20 @@ export function CreatePresetDialog() {
     close();
   };
   return (
-    <Modal title="Create preset" onClose={close}>
-      <label htmlFor="optic-preset-name" className="block text-[11px] uppercase tracking-wider text-ink-faint">Name</label>
-      <input id="optic-preset-name" autoFocus className="input mb-2 mt-0.5 w-full" value={name} onChange={(e) => setName(e.target.value)} placeholder="My look" />
-      <label htmlFor="optic-preset-group" className="block text-[11px] uppercase tracking-wider text-ink-faint">Group</label>
+    <Modal title={tr('dialogs.create_preset')} onClose={close}>
+      <label htmlFor="optic-preset-name" className="block text-2xs uppercase tracking-wider text-ink-faint">{tr('dialogs.name')}</label>
+      <input id="optic-preset-name" autoFocus className="input mb-2 mt-0.5 w-full" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('dialogs.my_look')} />
+      <label htmlFor="optic-preset-group" className="block text-2xs uppercase tracking-wider text-ink-faint">{tr('dialogs.group')}</label>
       <input id="optic-preset-group" className="input mb-2 mt-0.5 w-full" list="optic-preset-groups" value={group} onChange={(e) => setGroup(e.target.value)} />
       <datalist id="optic-preset-groups">{existing.map((g) => <option key={g} value={g} />)}</datalist>
-      <div className="mb-1 text-[11px] uppercase tracking-wider text-ink-faint">Include</div>
+      <div className="mb-1 text-2xs uppercase tracking-wider text-ink-faint">{tr('dialogs.include')}</div>
       <GroupChecklist value={groups} onChange={setGroups} />
-      <label className="mt-3 flex items-center gap-2 text-xs text-ink-dim" title="Store these exact values for JPEG/HEIC/PNG instead of the automatic 75 % scaling">
-        <input type="checkbox" className="accent-[#9a9a9a]" checked={nonRaw} onChange={(e) => setNonRaw(e.target.checked)} />
-        Save a separate non-RAW variant (exact values, no automatic scaling)
-      </label>
+      <label className="mt-3 flex items-center gap-2 text-xs text-ink-dim" title={tr('dialogs.store_these_exact_values_for_jpeg')}>
+        <input type="checkbox" className="accent-control" checked={nonRaw} onChange={(e) => setNonRaw(e.target.checked)} />{tr('dialogs.save_a_separate_non_raw_variant')}</label>
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>{tr('dialogs.cancel')}</button>
         <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40"
-          disabled={!groups.length} onClick={save}>Save preset</button>
+          disabled={!groups.length} onClick={save}>{tr('dialogs.save_preset')}</button>
       </div>
     </Modal>
   );
@@ -90,18 +78,18 @@ export function CopyPasteDialog() {
   const close = () => useUi.getState().set({ copyPaste: null });
   const enabled = mode === 'paste' ? clip?.groups : undefined;
   return (
-    <Modal title={mode === 'copy' ? 'Copy settings' : 'Paste settings'} onClose={close}>
+    <Modal title={mode === 'copy' ? tr('dialogs.copy_settings') : tr('dialogs.paste_settings')} onClose={close}>
       {mode === 'paste' && !clip ? (
-        <p className="text-xs text-ink-dim">Nothing copied yet. Use Copy settings (Ctrl/Cmd+Shift+C) first.</p>
+        <p className="text-xs text-ink-dim">{tr('dialogs.nothing_copied_yet_use_copy_settings')}</p>
       ) : (
         <GroupChecklist value={groups} onChange={setGroups} enabled={enabled} />
       )}
       <div className="mt-4 flex justify-end gap-2">
-        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>Cancel</button>
+        <button className="rounded border border-line px-3 py-1.5 text-xs hover:bg-hover" onClick={close}>{tr('dialogs.cancel')}</button>
         <button className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-40"
           disabled={!groups.length || (mode === 'paste' && !clip)}
           onClick={() => { if (mode === 'copy') copySettings(groups); else pasteSettings(groups); close(); }}>
-          {mode === 'copy' ? 'Copy' : 'Paste'}
+          {mode === 'copy' ? tr('dialogs.copy') : tr('dialogs.paste')}
         </button>
       </div>
     </Modal>

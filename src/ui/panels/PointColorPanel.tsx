@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 import { useState } from 'react';
 import { armSkinPick } from '../../app/presetActions';
 import { MAX_COLOR_POINTS, type ColorPoint } from '../../recipe/schema';
@@ -33,23 +34,21 @@ export function PointColorPanel() {
 
   return (
     <Section
-      title="Point Color"
+      title={tr('pointColorPanel.point_color')}
       enabled={pc.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('pointColor', on)}
       onReset={() => useEdit.getState().apply((r) => ({ ...r, pointColor: { ...r.pointColor, points: [] } }))}
     >
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        <ToolButton title="Pick a colour from the image" active={tool === 'pointColor'}
-          onClick={() => useUi.getState().set({ tool: tool === 'pointColor' ? 'none' : 'pointColor' })}>
-          + Pick
-        </ToolButton>
-        <ToolButton title="Pick a face: evens out skin hues (uniformity)" onClick={armSkinPick}>Skin</ToolButton>
-        <span className="ml-auto text-[10px] text-ink-faint">{pc.points.length}/{MAX_COLOR_POINTS}</span>
+        <ToolButton title={tr('pointColorPanel.pick_a_colour_from_the_image')} active={tool === 'pointColor'}
+          onClick={() => useUi.getState().set({ tool: tool === 'pointColor' ? 'none' : 'pointColor' })}>{tr('pointColorPanel.pick')}</ToolButton>
+        <ToolButton title={tr('pointColorPanel.pick_a_face_evens_out_skin')} onClick={armSkinPick}>{tr('pointColorPanel.skin')}</ToolButton>
+        <span className="ms-auto text-2xs text-ink-faint">{pc.points.length}/{MAX_COLOR_POINTS}</span>
       </div>
       {pc.points.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1.5">
           {pc.points.map((q, i) => (
-            <button key={i} title={`Point ${i + 1}`} onClick={() => setSel(i)}
+            <button key={i} title={tr('pointColorPanel.point_i', { i: i + 1 })} onClick={() => setSel(i)}
               onContextMenu={(e) => { e.preventDefault(); remove(i); }}
               className={`h-6 w-6 rounded-full border-2 ${i === idx ? 'border-white' : 'border-edge'}`} style={{ background: swatch(q) }} />
           ))}
@@ -57,23 +56,23 @@ export function PointColorPanel() {
       )}
       {p ? (
         <>
-          {slider('hue', 'Hue shift', -100, grad(`oklch(0.7 0.13 ${h - 30})`, `oklch(0.7 0.13 ${h})`, `oklch(0.7 0.13 ${h + 30})`))}
-          {slider('sat', 'Saturation', -100, grad(`oklch(0.7 0 ${h})`, `oklch(0.7 0.17 ${h})`))}
-          {slider('lum', 'Luminance', -100, grad(`oklch(0.35 0.08 ${h})`, `oklch(0.9 0.06 ${h})`))}
+          {slider('hue', tr('pointColorPanel.hue_shift'), -100, grad(`oklch(0.7 0.13 ${h - 30})`, `oklch(0.7 0.13 ${h})`, `oklch(0.7 0.13 ${h + 30})`))}
+          {slider('sat', tr('pointColorPanel.saturation'), -100, grad(`oklch(0.7 0 ${h})`, `oklch(0.7 0.17 ${h})`))}
+          {slider('lum', tr('pointColorPanel.luminance'), -100, grad(`oklch(0.35 0.08 ${h})`, `oklch(0.9 0.06 ${h})`))}
           <div className="mt-1 border-t border-line pt-1">
-            {slider('hueRange', 'Hue range', 0, undefined, 40)}
-            {slider('satRange', 'Saturation range', 0, undefined, 50)}
-            {slider('lumRange', 'Luminance range', 0, undefined, 60)}
-            {slider('smoothness', 'Smoothness', 0, undefined, 50)}
-            {slider('uniformity', 'Uniformity', 0)}
+            {slider('hueRange', tr('pointColorPanel.hue_range'), 0, undefined, 40)}
+            {slider('satRange', tr('pointColorPanel.saturation_range'), 0, undefined, 50)}
+            {slider('lumRange', tr('pointColorPanel.luminance_range'), 0, undefined, 60)}
+            {slider('smoothness', tr('pointColorPanel.smoothness'), 0, undefined, 50)}
+            {slider('uniformity', tr('pointColorPanel.uniformity'), 0)}
           </div>
           <div className="mt-1 flex items-center justify-between">
-            <Toggle label="Visualize range" checked={visualize} onChange={(v) => useUi.getState().set({ visualizePointColor: v })} />
+            <Toggle label={tr('pointColorPanel.visualize_range')} checked={visualize} onChange={(v) => useUi.getState().set({ visualizePointColor: v })} />
           </div>
-          <button className="text-[11px] text-ink-faint hover:text-[#e07070]" onClick={() => remove(idx)}>Delete point</button>
+          <button className="text-2xs text-ink-faint hover:text-danger" onClick={() => remove(idx)}>{tr('pointColorPanel.delete_point')}</button>
         </>
       ) : (
-        <p className="text-[11px] text-ink-faint">Pick a colour in the image to adjust just that colour range.</p>
+        <p className="text-xs text-ink-faint">{tr('pointColorPanel.pick_a_colour_in_the_image')}</p>
       )}
     </Section>
   );

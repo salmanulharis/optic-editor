@@ -8,6 +8,8 @@ import { useExportQueue } from '../library/exportQueue';
 import { enqueueImport, reviewImport, type Incoming } from '../library/importer';
 import { openPhoto } from '../library/open';
 import { useLibrary } from '../state/libraryStore';
+import { confirmDialog } from '../ui/feedback/dialogs';
+import { t } from '../i18n';
 
 interface PwaState {
   offlineReady: boolean;
@@ -53,7 +55,12 @@ export async function initPwa() {
 /** Apply a waiting update and reload (asks first while an export is running). */
 export async function applyUpdate() {
   const job = useExportQueue.getState().job;
-  if (job?.status === 'running' && !confirm('An export is running. Reload now? It can be resumed after the reload.')) return;
+  if (job?.status === 'running' && !(await confirmDialog({
+    title: t('pwa.reloadDuringExport.title'),
+    message: t('pwa.reloadDuringExport.message'),
+    confirmLabel: t('pwa.reloadDuringExport.confirm'),
+    cancelLabel: t('pwa.reloadDuringExport.cancel'),
+  }))) return;
   await usePwa.getState().update?.(true);
 }
 

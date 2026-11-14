@@ -3,6 +3,7 @@
  * output sharpening for the medium, and the watermark.
  */
 import type { SharpenAmount, SharpenTarget, Watermark } from './exportSettings';
+import { type AnyCanvas, context2d, createCanvas } from '../canvas';
 
 export function cropCenter(rgb: Uint16Array, W: number, H: number, w: number, h: number): Uint16Array {
   if (w === W && h === H) return rgb;
@@ -68,20 +69,29 @@ const ANCHOR: Record<Watermark['position'], [number, number]> = {
   tl: [0, 0], tc: [0.5, 0], tr: [1, 0], cl: [0, 0.5], c: [0.5, 0.5], cr: [1, 0.5], bl: [0, 1], bc: [0.5, 1], br: [1, 1],
 };
 
-/** Composite a text or PNG watermark (8-bit, alpha) into the 16-bit image, in place. */
-export async function applyWatermark(rgb: Uint16Array, w: number, h: number, wm: Watermark): Promise<void> {
-  if (!wm.enabled || (wm.kind === 'text' ? !wm.text.trim() : !wm.image)) return;
+/** A watermark drawn at its final size: RGBA pixels and where they go. */
+export interface WatermarkMark {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+/**
+ * Draw the watermark for a w × h output (needs a canvas: OffscreenCanvas in workers, a regular
+ * canvas on the main thread). Null when the watermark is off or empty.
+ */
+export async function renderWatermarkMark(w: number, h: number, wm: Watermark): Promise<WatermarkMark | null> {
+  if (!wm.enabled || (wm.kind === 'text' ? !wm.text.trim() : !wm.image)) return null;
   const long = Math.max(w, h);
-  const margin = Math.round((wm.margin / 100) * long);
-  let mark: OffscreenCanvas;
+  let mark: AnyCanvas;
   if (wm.kind === 'text') {
     const px = Math.max(8, Math.round((wm.size / 100) * long));
-    const probe = new OffscreenCanvas(1, 1).getContext('2d')!;
+    const probe = context2d(createCanvas(1, 1));
     const font = `500 ${px}px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`;
     probe.font = font;
     const tw = Math.ceil(probe.measureText(wm.text).width) + 4;
-    mark = new OffscreenCanvas(Math.min(w, tw), Math.ceil(px * 1.35));
-    const ctx = mark.getContext('2d')!;
+    mark = createCanvas(Math.min(w, tw), Math.ceil(px * 1.35));
+    const ctx = context2d(mark);
     ctx.font = font;
     ctx.textBaseline = 'middle';
     ctx.fillStyle = wm.color === 'black' ? '#000' : '#fff';
@@ -90,16 +100,23 @@ export async function applyWatermark(rgb: Uint16Array, w: number, h: number, wm:
     const bmp = await createImageBitmap(new Blob([wm.image! as BlobPart], { type: 'image/png' }));
     const tw = Math.max(8, Math.round((wm.size * 5 / 100) * long));
     const th = Math.max(1, Math.round((bmp.height / bmp.width) * tw));
-    mark = new OffscreenCanvas(Math.min(w, tw), Math.min(h, th));
-    const ctx = mark.getContext('2d')!;
+    mark = createCanvas(Math.min(w, tw), Math.min(h, th));
+    const ctx = context2d(mark);
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(bmp, 0, 0, mark.width, mark.height);
     bmp.close();
   }
+  return { data: context2d(mark).getImageData(0, 0, mark.width, mark.height).data, width: mark.width, height: mark.height };
+}
+
+/** Composite a drawn watermark into the 16-bit image, in place (no canvas needed). */
+export function compositeWatermark(rgb: Uint16Array, w: number, h: number, wm: Watermark, mark: WatermarkMark): void {
+  const long = Math.max(w, h);
+  const margin = Math.round((wm.margin / 100) * long);
   const [ax, ay] = ANCHOR[wm.position];
   const x0 = Math.round(margin + ax * (w - 2 * margin - mark.width));
   const y0 = Math.round(margin + ay * (h - 2 * margin - mark.height));
-  const d = mark.getContext('2d')!.getImageData(0, 0, mark.width, mark.height).data;
+  const d = mark.data;
   const op = Math.max(0, Math.min(1, wm.opacity / 100));
   for (let y = 0; y < mark.height; y++) {
     const yy = y0 + y;
@@ -114,6 +131,12 @@ export async function applyWatermark(rgb: Uint16Array, w: number, h: number, wm:
       for (let c = 0; c < 3; c++) rgb[o + c] = Math.round(rgb[o + c] * (1 - a) + d[s + c] * 257 * a);
     }
   }
+}
+
+/** Composite a text or PNG watermark (8-bit, alpha) into the 16-bit image, in place. */
+export async function applyWatermark(rgb: Uint16Array, w: number, h: number, wm: Watermark, premade?: WatermarkMark | null): Promise<void> {
+  const mark = premade ?? (await renderWatermarkMark(w, h, wm));
+  if (mark) compositeWatermark(rgb, w, h, wm, mark);
 }
 
 /** Minimal XMP packet with author and copyright (Dublin Core + XMP Rights). */

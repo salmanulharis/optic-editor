@@ -22,6 +22,8 @@ import { useUi } from '../state/uiStore';
 import { targetIds } from '../state/libraryStore';
 import { pasteToSelection } from '../library/batch';
 import { getRenderer } from './actions';
+import { toast } from '../ui/feedback/toasts';
+import { t } from '../i18n';
 
 const isRaw = () => !!useImage.getState().image?.isRaw;
 
@@ -117,6 +119,12 @@ export function pasteSettings(groups: PresetGroup[]) {
 export function resetAll() {
   const img = useImage.getState().image;
   useEdit.getState().apply((r) => ({ ...defaultRecipeFor(img), output: r.output }), 'Reset all');
+}
+
+/** Reset all, then offer Undo in a toast (no confirmation needed: it is one history step). */
+export function resetAllWithUndo() {
+  resetAll();
+  toast(t('edit.resetAll.done'), { label: t('edit.undo'), run: () => useEdit.getState().undo() });
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,9 @@ import { useImage } from '../state/imageStore';
 import { setMeta, targetIds, useLibrary } from '../state/libraryStore';
 import { catalog, type ColorLabel, type Flag } from './db';
 import { removeEntry } from './opfs';
+import { confirmDialog } from '../ui/feedback/dialogs';
+import { t } from '../i18n';
+import { tp } from '../i18n/format';
 
 export const setRating = (n: number, ids = targetIds()) => setMeta(ids, { rating: Math.max(0, Math.min(5, n)) });
 export const setFlag = (f: Flag, ids = targetIds()) => setMeta(ids, { flag: f });
@@ -33,7 +36,12 @@ export async function removePhotos(ids: string[], ask = true): Promise<boolean> 
   const lib = useLibrary.getState();
   const recs = ids.map((id) => lib.byId.get(id)).filter((p) => !!p);
   const copies = recs.filter((p) => p.storage === 'opfs').length;
-  if (ask && !confirm(`Remove ${recs.length} photo${recs.length > 1 ? 's' : ''} from Optic?\n\nTheir edits and previews are deleted${copies ? `, and so are the ${copies} cop${copies > 1 ? 'ies' : 'y'} stored in Optic (the files you imported from are not touched)` : ''}.`)) return false;
+  if (ask && !(await confirmDialog({
+    title: tp('library.remove.title', recs.length),
+    message: copies ? tp('library.remove.messageWithCopies', copies) : t('library.remove.message'),
+    confirmLabel: tp('library.remove.confirm', recs.length),
+    danger: true,
+  }))) return false;
   const open = useImage.getState();
   if (open.photoId && ids.includes(open.photoId)) {
     open.close();

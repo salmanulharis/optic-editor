@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * The library grid: virtualised (only the rows in view plus a margin are mounted), so it scrolls
  * smoothly with tens of thousands of photos. Click selects, Shift-click extends, Ctrl/Cmd-click
@@ -9,6 +10,7 @@ import { openPhoto } from '../../library/open';
 import { usePhotoImage } from '../../library/previews';
 import { useLibrary, useVisiblePhotos } from '../../state/libraryStore';
 import { PhotoBadges } from './PhotoBadges';
+import { tp } from '../../i18n/format';
 
 const GAP = 6;
 const LABEL_H = 18;
@@ -19,7 +21,7 @@ const Cell = memo(function Cell({ p, size, selected, active, onPick }: { p: Phot
     <div
       role="option"
       aria-selected={selected}
-      aria-label={`${p.fileName}${p.rating ? `, ${p.rating} stars` : ''}${p.flag === 1 ? ', picked' : p.flag === -1 ? ', rejected' : ''}`}
+      aria-label={`${p.fileName}${p.rating ? tp('grid.rating_stars', p.rating) : ''}${p.flag === 1 ? tr('grid.picked') : p.flag === -1 ? tr('grid.rejected') : ''}`}
       className={`group relative flex flex-col overflow-hidden rounded ${selected ? 'bg-active ring-2 ring-edge' : 'bg-sunk hover:bg-hover'} ${active ? 'outline outline-2 outline-offset-1 outline-strong' : ''}`}
       style={{ width: size, height: size + LABEL_H }}
       onClick={(e) => onPick(e, p)}
@@ -32,15 +34,16 @@ const Cell = memo(function Cell({ p, size, selected, active, onPick }: { p: Phot
         e.dataTransfer.effectAllowed = 'copy';
       }}
     >
-      <div className="relative flex min-h-0 flex-1 items-center justify-center p-1.5">
+      {/* The photo and its name are centred together, so the name sits right under the image. */}
+      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-0.5 p-1.5">
         {url ? (
-          <img src={url} alt="" decoding="async" draggable={false} className={`max-h-full max-w-full object-contain shadow ${p.flag === -1 ? 'opacity-40' : ''}`} />
+          <img src={url} alt="" decoding="async" draggable={false} className={`max-h-[calc(100%-20px)] max-w-full object-contain shadow ${p.flag === -1 ? 'opacity-40' : ''}`} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-faint">{p.error ? 'Unreadable' : '…'}</div>
+          <div className="flex w-full flex-1 items-center justify-center text-2xs text-ink-faint">{p.error ? tr('grid.unreadable') : '…'}</div>
         )}
+        <div className="w-full truncate text-center text-2xs leading-[18px] text-ink-dim">{p.fileName}</div>
         <PhotoBadges p={p} />
       </div>
-      <div className="truncate px-1.5 text-[10px] leading-[18px] text-ink-dim">{p.fileName}</div>
     </div>
   );
 });
@@ -140,8 +143,9 @@ export function Grid({ touch = false }: { touch?: boolean }) {
   return (
     <div
       ref={ref}
+      dir="ltr"
       role="listbox"
-      aria-label="Photos"
+      aria-label={tr('grid.photos')}
       aria-multiselectable="true"
       tabIndex={0}
       className="relative min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-edge"

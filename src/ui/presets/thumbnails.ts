@@ -13,6 +13,7 @@ import type { Preset } from '../../presets/types';
 import { effectiveRecipe } from '../../recipe/schema';
 import { useImage } from '../../state/imageStore';
 import { useUi } from '../../state/uiStore';
+import { canvasToBlob, context2d, createCanvas } from '../../io/canvas';
 
 const cache = new Map<string, string>(); // presetId → object URL (for the current photo)
 const visible = new Map<string, Preset>();
@@ -35,9 +36,9 @@ async function renderOne(p: Preset) {
   if (!r.thumbnailReady(recipe)) return false;
   const data = r.thumbnail(recipe, 256);
   if (!data) return false;
-  const canvas = new OffscreenCanvas(data.width, data.height);
-  canvas.getContext('2d')!.putImageData(data, 0, 0);
-  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
+  const canvas = createCanvas(data.width, data.height);
+  context2d(canvas).putImageData(data, 0, 0);
+  const blob = await canvasToBlob(canvas, 'image/jpeg', 0.85);
   if (img.id !== imageId) return true;
   const url = URL.createObjectURL(blob);
   cache.set(p.id, url);

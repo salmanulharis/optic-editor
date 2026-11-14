@@ -12,6 +12,8 @@ import { useLibrary } from '../state/libraryStore';
 import { readZip, writeZip } from '../storage/zip';
 import type { PhotoRecord } from './db';
 import { enqueuePreviews } from './previews';
+import { toast } from '../ui/feedback/toasts';
+import { t } from '../i18n';
 
 interface PackEntry {
   optic: 'edit';
@@ -38,7 +40,7 @@ export async function exportRecipePack(ids: string[]) {
     };
     files.push({ name: `${p.hash.slice(0, 16)}_${p.fileName}.json`, data: new TextEncoder().encode(JSON.stringify(entry)) });
   }
-  if (!files.length) { alert('None of the selected photos has edits yet.'); return; }
+  if (!files.length) { toast(t('recipePack.noEdits')); return; }
   downloadBlob(new Blob([writeZip(files) as BlobPart], { type: 'application/zip' }), `optic-edits-${new Date().toISOString().slice(0, 10)}.opticedits`);
 }
 

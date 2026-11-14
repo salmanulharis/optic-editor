@@ -5,11 +5,15 @@ import { type LoadedImage, useImage } from '../state/imageStore';
 import { type CompareMode, useUi } from '../state/uiStore';
 import { ExportProgress } from '../ui/export/ExportProgress';
 import { ImportProgress } from '../ui/library/ImportDialog';
-import { BatchMenu, BatchProgress } from '../ui/library/BatchMenu';
+import { BatchMenu, BatchProgress, useBatchMenuItems } from '../ui/library/BatchMenu';
+import { IconButton } from '../ui/controls/IconButton';
+import { Menu } from '../ui/controls/Menu';
+import { WIDE_QUERY, XL_QUERY, useMediaQuery } from '../ui/mobile/layout';
 import { PwaStatus } from '../ui/PwaStatus';
 import { useLibrary } from '../state/libraryStore';
 import { openPhoto } from '../library/open';
 import { openFile } from './openFile';
+import { t as tr } from '../i18n';
 
 export function badgeFor(img: LoadedImage): string {
   if (img.isRaw) return `RAW · ${img.bitDepth}-bit`;
@@ -22,10 +26,12 @@ function fmtShutter(s?: number) {
   return s >= 0.5 ? `${+s.toFixed(1)} s` : `1/${Math.round(1 / s)} s`;
 }
 
-const Btn = (p: { onClick(): void; children: ReactNode; title?: string; active?: boolean; disabled?: boolean }) => (
+const Btn = (p: { onClick(): void; children: ReactNode; title?: string; active?: boolean; disabled?: boolean; expanded?: boolean; controls?: string }) => (
   <button
     title={p.title}
     disabled={p.disabled}
+    aria-expanded={p.expanded}
+    aria-controls={p.expanded ? p.controls : undefined}
     onClick={p.onClick}
     className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${p.active ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
   >
@@ -33,7 +39,7 @@ const Btn = (p: { onClick(): void; children: ReactNode; title?: string; active?:
   </button>
 );
 
-const COMPARE_LABEL: Record<CompareMode, string> = { off: 'Compare', split: 'Split', side: 'Side by side' };
+const COMPARE_LABEL: Record<CompareMode, string> = { get off() { return tr('topBar.compare'); }, get split() { return tr('topBar.split'); }, get side() { return tr('topBar.side_by_side'); } };
 const NEXT_COMPARE: Record<CompareMode, CompareMode> = { off: 'split', split: 'side', side: 'off' };
 
 /** Compare view (Y cycles), its "Before" source, split orientation and swap. */
@@ -46,38 +52,38 @@ function CompareControls({ disabled }: { disabled: boolean }) {
   const cur = useEdit((s) => activeCopy(s));
   const set = useUi.getState().set;
   return (
-    <div className="flex items-center gap-0.5 border-l border-line pl-2">
-      <Btn onClick={() => set({ compareMode: NEXT_COMPARE[mode] })} active={mode !== 'off'} disabled={disabled} title="Compare views: split / side by side (Y)">
+    <div className="flex items-center gap-0.5 border-s border-line ps-2">
+      <Btn onClick={() => set({ compareMode: NEXT_COMPARE[mode] })} active={mode !== 'off'} disabled={disabled} title={tr('topBar.compare_views_split_side_by_side')}>
         {COMPARE_LABEL[mode]}
       </Btn>
       {mode !== 'off' && (
         <>
           <select
-            className="max-w-[150px] rounded border border-line bg-raise px-1 py-0.5 text-[11px] text-ink outline-none"
+            className="max-w-[150px] rounded border border-line bg-raise px-1 py-0.5 text-2xs text-ink outline-none"
             value={source}
-            title="What the Before side shows"
+            title={tr('topBar.what_the_before_side_shows')}
             onChange={(e) => set({ compareSource: e.target.value })}
           >
-            <option value="original">Original (no edits)</option>
-            <option value="session">As opened this session</option>
+            <option value="original">{tr('topBar.original_no_edits')}</option>
+            <option value="session">{tr('topBar.as_opened_this_session')}</option>
             {cur.snapshots.length > 0 && (
-              <optgroup label="Snapshots">
+              <optgroup label={tr('topBar.snapshots')}>
                 {cur.snapshots.map((s) => <option key={s.id} value={`snap:${s.id}`}>{s.name}</option>)}
               </optgroup>
             )}
             {copies.length > 1 && (
-              <optgroup label="Virtual copies">
+              <optgroup label={tr('topBar.virtual_copies')}>
                 {copies.filter((c) => c.id !== active).map((c) => <option key={c.id} value={`copy:${c.id}`}>{c.name}</option>)}
               </optgroup>
             )}
-            <optgroup label="History">
+            <optgroup label={tr('topBar.history')}>
               {cur.steps.map((s, i) => <option key={i} value={`step:${i}`}>{i + 1}. {s.label}</option>).reverse()}
             </optgroup>
           </select>
           {mode === 'split' && (
-            <Btn onClick={() => set({ compareVertical: !vertical })} title="Split orientation">{vertical ? '⇆' : '⇅'}</Btn>
+            <Btn onClick={() => set({ compareVertical: !vertical })} title={tr('topBar.split_orientation')}>{vertical ? '⇆' : '⇅'}</Btn>
           )}
-          <Btn onClick={() => set({ compareSwap: !useUi.getState().compareSwap })} title="Swap before / after">⇄</Btn>
+          <Btn onClick={() => set({ compareSwap: !useUi.getState().compareSwap })} title={tr('topBar.swap_before_after')}>⇄</Btn>
         </>
       )}
     </div>
@@ -120,82 +126,137 @@ export function TopBar() {
     if (id && useImage.getState().photoId !== id) void openPhoto(id);
     else useLibrary.getState().set({ view: 'editor' });
   };
+  const wide = useMediaQuery(WIDE_QUERY);
+  const xl = useMediaQuery(XL_QUERY);
+  const presetsDrawer = useUi((s) => s.presetsDrawer);
+  const panelsHidden = useUi((s) => s.panelsHidden);
+  const batchItems = useBatchMenuItems();
+  const openSettings = () => useUi.getState().set({ settingsOpen: true });
+  const openShortcuts = () => useUi.getState().set({ shortcutsOpen: true });
+  const editor = view === 'editor';
+  const group = 'flex shrink-0 items-center gap-0.5 border-l border-line pl-2';
   return (
-    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-line bg-panel px-2">
-      <span className="px-1 text-sm font-semibold tracking-wide text-ink">Optic</span>
-      <div className="flex rounded border border-line p-0.5" role="tablist" aria-label="View">
+    <header className="flex h-11 shrink-0 items-center gap-1 border-b border-line bg-panel px-2 lg:gap-2">
+      {/* Navigation and file */}
+      <h1 className="px-1 text-sm font-semibold tracking-wide text-ink">{tr('topBar.optic')}<span className="sr-only">: {view === 'library' ? tr('topBar.library') : image ? image.fileName : tr('topBar.editor')}</span>
+      </h1>
+      <div className="flex shrink-0 rounded border border-line p-0.5" role="tablist" aria-label={tr('topBar.view')}>
         <button role="tab" aria-selected={view === 'library'} className={`rounded px-2 py-0.5 text-xs ${view === 'library' ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
-          onClick={() => useLibrary.getState().set({ view: 'library' })} title="Library (G)">Library</button>
-        <button role="tab" aria-selected={view === 'editor'} className={`rounded px-2 py-0.5 text-xs ${view === 'editor' ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
-          onClick={toEditor} title="Edit (E)">Edit</button>
+          onClick={() => useLibrary.getState().set({ view: 'library' })} title={tr('topBar.library_g')}>{tr('topBar.library')}</button>
+        <button role="tab" aria-selected={editor} className={`rounded px-2 py-0.5 text-xs ${editor ? 'bg-active text-strong' : 'text-ink-dim hover:text-ink'}`}
+          onClick={toEditor} title={tr('topBar.edit_e')}>{tr('topBar.edit')}</button>
       </div>
+      {editor && !wide && (
+        <Btn onClick={() => useUi.getState().set({ presetsDrawer: !presetsDrawer })} active={presetsDrawer}
+          title={tr('topBar.presets_and_history')} expanded={presetsDrawer} controls="presets-drawer">{tr('topBar.presets')}</Btn>
+      )}
       <ImportProgress />
       <BatchProgress />
-      {view === 'editor' && <Btn onClick={() => inputRef.current?.click()} title="Open a photo (Ctrl/Cmd+O): imports it into the library">Open</Btn>}
       <input
         ref={inputRef}
         type="file"
         accept={ACCEPT}
         className="hidden"
+        tabIndex={-1}
+        aria-hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) openFile(f);
           e.target.value = '';
         }}
       />
-      {view === 'library' && <div className="flex-1" />}
-      {view === 'editor' && image && (
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+      {editor && image ? (
+        <div className="flex min-w-[120px] flex-1 items-center gap-2 overflow-hidden">
           <span className="truncate text-xs text-ink" title={image.fileName}>{image.fileName}</span>
-          <span className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-ink-dim" title={`Decoded with ${image.decoder}`}>
+          <span className="hidden shrink-0 rounded border border-line px-1.5 py-0.5 text-2xs uppercase tracking-wider text-ink-dim lg:inline" title={tr('topBar.decoded_with_decoder', { decoder: image.decoder })}>
             {badgeFor(image)}
           </span>
-          <span className="hidden truncate text-[11px] text-ink-faint lg:inline">{infoParts.join(' · ')}</span>
+          <span className="hidden truncate text-2xs text-ink-faint xl:inline">{infoParts.join(' · ')}</span>
         </div>
-      )}
-      {view === 'editor' && !image && <div className="flex-1" />}
+      ) : <div className="flex-1" />}
       <PwaStatus />
-      <button className="rounded px-1.5 py-1 text-sm text-ink-dim hover:bg-hover hover:text-ink" title="Settings (Ctrl/Cmd+,)" aria-label="Settings" onClick={() => useUi.getState().set({ settingsOpen: true })}>⚙</button>
-      <button className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-hover hover:text-ink" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" onClick={() => useUi.getState().set({ shortcutsOpen: true })}>?</button>
       <ExportProgress />
-      {view === 'editor' && (<>
-      <BatchMenu />
-      <div className="flex items-center gap-0.5 border-l border-line pl-2">
-        <Btn onClick={() => useEdit.getState().undo()} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)">↶</Btn>
-        <Btn onClick={() => useEdit.getState().redo()} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)">↷</Btn>
-      </div>
-      <div className="flex items-center gap-0.5 border-l border-line pl-2">
-        <Btn onClick={() => setZoom('fit')} active={zoom === 'fit'} disabled={!image} title="Fit (Z toggles fit / 100%)">Fit</Btn>
-        <Btn onClick={() => setZoom(1)} active={zoom === 1} disabled={!image}>100%</Btn>
-        <Btn onClick={() => setZoom(2)} active={zoom === 2} disabled={!image}>200%</Btn>
-        <span className="w-11 text-right text-[11px] tabular-nums text-ink-faint">{image ? `${pct}%` : ''}</span>
-      </div>
-      <div className="flex items-center gap-0.5 border-l border-line pl-2">
-        <Btn onClick={() => useUi.getState().set({ cropMode: !cropMode, tool: 'none', masksOpen: false })} active={cropMode} disabled={!image} title="Crop & straighten (R)">Crop</Btn>
-        <Btn onClick={() => useUi.getState().set({ masksOpen: !masksOpen, cropMode: false, tool: 'none', maskPick: false })} active={masksOpen} disabled={!image} title="Masks: local adjustments (M)">Masks</Btn>
-      </div>
-      <CompareControls disabled={!image} />
-      <div className="flex items-center gap-1 border-l border-line pl-2">
-        <button
-          disabled={!image}
-          title="Before / After (hold \\)"
-          className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${showBefore ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
-          onPointerDown={() => useUi.getState().set({ showBefore: true })}
-          onPointerUp={() => useUi.getState().set({ showBefore: false })}
-          onPointerLeave={() => showBefore && useUi.getState().set({ showBefore: false })}
-        >
-          {showBefore ? 'Before' : 'Before/After'}
-        </button>
+      {(!editor || xl) && (<>
+        {editor && <Btn onClick={() => inputRef.current?.click()} title={tr('topBar.open_a_photo_ctrl_cmd_o')}>{tr('topBar.open')}</Btn>}
+        {editor && <BatchMenu />}
+        <IconButton className="px-1.5 text-sm text-ink-dim hover:bg-hover hover:text-ink" label={tr('topBar.settings')} shortcut="Ctrl/Cmd+," onClick={openSettings}>⚙</IconButton>
+        <IconButton className="px-1.5 text-xs text-ink-dim hover:bg-hover hover:text-ink" label={tr('topBar.keyboard_shortcuts')} shortcut="?" onClick={openShortcuts}>?</IconButton>
+      </>)}
+      {editor && (<>
+        {/* View */}
+        <div className={group}>
+          <ZoomControl zoom={zoom} pct={pct} disabled={!image} setZoom={setZoom} />
+        </div>
+        {/* Tools */}
+        <div className={group}>
+          <Btn onClick={() => useUi.getState().set({ cropMode: !cropMode, tool: 'none', masksOpen: false })} active={cropMode} disabled={!image} title={tr('topBar.crop_straighten_r')}>{tr('topBar.crop')}</Btn>
+          <Btn onClick={() => useUi.getState().set({ masksOpen: !masksOpen, cropMode: false, tool: 'none', maskPick: false })} active={masksOpen} disabled={!image} title={tr('topBar.masks_local_adjustments_m')}>{tr('topBar.masks')}</Btn>
+        </div>
+        <CompareControls disabled={!image} />
+        <div className={group}>
+          <button
+            disabled={!image}
+            title={tr('topBar.before_after_hold')}
+            className={`rounded px-2 py-1 text-xs disabled:opacity-30 ${showBefore ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
+            onPointerDown={() => useUi.getState().set({ showBefore: true })}
+            onPointerUp={() => useUi.getState().set({ showBefore: false })}
+            onPointerLeave={() => showBefore && useUi.getState().set({ showBefore: false })}
+          >
+            {showBefore ? tr('topBar.before') : tr('topBar.before_after')}
+          </button>
+        </div>
+        {/* History, layout, overflow, then the primary action */}
+        <div className={group}>
+          <IconButton className="px-1 text-ink hover:bg-hover disabled:opacity-30" label={tr('topBar.undo')} shortcut="Ctrl/Cmd+Z" disabled={!canUndo} onClick={() => useEdit.getState().undo()}>↶</IconButton>
+          <IconButton className="px-1 text-ink hover:bg-hover disabled:opacity-30" label={tr('topBar.redo')} shortcut="Ctrl/Cmd+Shift+Z" disabled={!canRedo} onClick={() => useEdit.getState().redo()}>↷</IconButton>
+          <IconButton className={`px-1 hover:bg-hover ${panelsHidden ? 'bg-active text-strong' : 'text-ink'}`} label={panelsHidden ? tr('topBar.show_the_side_panels') : tr('topBar.hide_the_side_panels')} shortcut="F"
+            onClick={() => useUi.getState().set({ panelsHidden: !panelsHidden, presetsDrawer: false })}>
+            <PanelsIcon />
+          </IconButton>
+          {!xl && (
+            <Menu label="⋯" ariaLabel={tr('topBar.more_actions')} align="right" className="hit rounded px-1.5 text-ink hover:bg-hover" items={[
+              { label: tr('topBar.photo'), heading: true },
+              { label: tr('topBar.open_a_photo'), hint: tr('topBar.ctrl_cmd_o_imports_it_into'), onSelect: () => inputRef.current?.click() },
+              { label: tr('topBar.batch'), heading: true },
+              ...batchItems,
+              { label: tr('topBar.optic'), heading: true },
+              { label: tr('topBar.settings'), hint: tr('topBar.ctrl_cmd'), onSelect: openSettings },
+              { label: tr('topBar.keyboard_shortcuts'), hint: '?', onSelect: openShortcuts },
+            ]} />
+          )}
+        </div>
         <button
           disabled={!image}
           onClick={() => useUi.getState().set({ exportOpen: true })}
-          className="rounded bg-accent px-3 py-1 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-30"
-          title="Export (Ctrl/Cmd+E)"
-        >
-          Export
-        </button>
-      </div>
+          className="shrink-0 rounded bg-accent px-3 py-1 text-xs font-medium text-on-accent hover:bg-accent-hi disabled:opacity-30"
+          title={tr('topBar.export_ctrl_cmd_e')}
+        >{tr('topBar.export')}</button>
       </>)}
     </header>
+  );
+}
+
+/** Two side columns around the photo (hide / show the side panels). */
+function PanelsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <path d="M8 5v14M16 5v14" />
+    </svg>
+  );
+}
+
+/** Zoom as one control: the current scale on the button, Fit / 100 % / 200 % in its menu. */
+function ZoomControl({ zoom, pct, disabled, setZoom }: { zoom: 'fit' | number; pct: number; disabled: boolean; setZoom(z: 'fit' | number): void }) {
+  const label = zoom === 'fit' ? tr('topBar.fit_pct', { pct }) : `${pct}%`;
+  if (disabled) return <span className="px-2 py-1 text-xs text-ink-faint opacity-30">{tr('topBar.zoom')}</span>;
+  const item = (z: 'fit' | number, text: string, hint?: string) => ({ label: `${zoom === z ? '✓ ' : ''}${text}`, hint, onSelect: () => setZoom(z) });
+  return (
+    <Menu label={<span className="tabular-nums">{label} <span aria-hidden className="text-ink-faint">▾</span></span>} ariaLabel={tr('topBar.zoom_label', { label: label })}
+      title={tr('topBar.zoom_z_toggles_fit_100')} className="min-w-[88px] rounded px-2 py-1 text-xs text-ink hover:bg-hover" items={[
+        item('fit', tr('topBar.fit'), 'Z'),
+        item(1, '100%', 'Z'),
+        item(2, '200%'),
+      ]} />
   );
 }

@@ -5,7 +5,8 @@
 import { create } from 'zustand';
 import { lsGet, lsSet } from '../storage/db';
 
-export type Theme = 'dark' | 'darker' | 'light';
+/** 'system' follows the operating system: Dark or Light. */
+export type Theme = 'dark' | 'darker' | 'light' | 'system';
 export type PreviewQuality = 'performance' | 'balanced' | 'quality';
 
 export interface DetailDefaults {
@@ -24,7 +25,7 @@ export interface Settings {
   reducedMotion: 'system' | 'on' | 'off';
   language: string;
   onboardingDone: boolean;
-  /** Show the frame rate in the viewer. */
+  /** Show the frame rate in the viewer (a diagnostic; off unless the user turns it on). */
   showFps: boolean;
 }
 
@@ -37,7 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reducedMotion: 'system',
   language: 'en',
   onboardingDone: false,
-  showFps: true,
+  showFps: false,
 };
 
 const KEY = 'optic.settings';

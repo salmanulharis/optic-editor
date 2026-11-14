@@ -73,6 +73,12 @@ export function useKeyboard() {
       if ((e.key === 'u' || e.key === 'U') && lib.active) { void setFlag(0); return; }
       if ((e.key === 'x' || e.key === 'X') && !ui.cropMode && lib.active) { void setFlag(-1); return; }
       if (e.key === 'g' || e.key === 'G') { lib.set({ view: 'library' }); return; }
+      // F: hide / show the editor's side panels (more room for the photo).
+      if ((e.key === 'f' || e.key === 'F') && !e.altKey && lib.view === 'editor') {
+        e.preventDefault();
+        ui.set({ panelsHidden: !ui.panelsHidden, presetsDrawer: false });
+        return;
+      }
       if ((e.key === 'e' || e.key === 'E') && lib.view === 'library') {
         const id = lib.active ?? targetIds()[0];
         if (id) void openPhoto(id);

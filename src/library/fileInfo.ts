@@ -9,6 +9,7 @@ import type { SourceFormat } from '../io/decode/types';
 import { cameraInfoFromExif, orientationFromExif, readExifBlocks, type ExifBlocks } from '../io/metadata/exif';
 import { TiffReader } from '../io/metadata/tiffReader';
 import { PREVIEW_EDGE, THUMB_EDGE } from './previewSizes';
+import { type AnyCanvas, canvasToBlob, context2d, createCanvas } from '../io/canvas';
 
 const MB = 1024 * 1024;
 
@@ -110,13 +111,13 @@ async function embeddedJpeg(file: File): Promise<Blob | null> {
 }
 
 /** Draw a bitmap upright (EXIF orientation 1…8) and scaled to fit `edge`. */
-function orient(bmp: ImageBitmap, orientation: number, edge: number): OffscreenCanvas {
+function orient(bmp: ImageBitmap, orientation: number, edge: number): AnyCanvas {
   const swap = orientation >= 5;
   const w0 = swap ? bmp.height : bmp.width, h0 = swap ? bmp.width : bmp.height;
   const k = Math.min(1, edge / Math.max(w0, h0));
   const W = Math.max(1, Math.round(w0 * k)), H = Math.max(1, Math.round(h0 * k));
-  const c = new OffscreenCanvas(W, H);
-  const ctx = c.getContext('2d')!;
+  const c = createCanvas(W, H);
+  const ctx = context2d(c);
   ctx.imageSmoothingQuality = 'high';
   const bw = swap ? H : W, bh = swap ? W : H;
   switch (orientation) {
@@ -142,9 +143,9 @@ export interface QuickPreview {
 }
 
 /** Encode a canvas: WebP where supported (smaller), else JPEG. */
-export async function encodeCanvas(c: OffscreenCanvas, quality = 0.85): Promise<Blob> {
-  const webp = await c.convertToBlob({ type: 'image/webp', quality });
-  return webp.type === 'image/webp' ? webp : c.convertToBlob({ type: 'image/jpeg', quality });
+export async function encodeCanvas(c: AnyCanvas, quality = 0.85): Promise<Blob> {
+  const webp = await canvasToBlob(c, 'image/webp', quality);
+  return webp.type === 'image/webp' ? webp : canvasToBlob(c, 'image/jpeg', quality);
 }
 
 /**

@@ -54,6 +54,7 @@ upstream projects linked above.
 | Data | Licence | Use |
 |---|---|---|
 | [lensfun](https://github.com/lensfun/lensfun) lens database (subset, `src/io/lens/lensfun-subset.json`) | CC BY-SA 3.0 | Lens profiles for RAW files without embedded corrections |
+| Sample photo: Apple iPhone XS, `IMG_1105.dng` from [raw.pixls.us](https://raw.pixls.us/) (optional, fetched by `npm run sample:fetch` into `public/samples/`) | CC0 1.0 (public domain dedication) | "Try a sample photo" in empty libraries and the tour |
 
 ## Build and test tools (not shipped)
 

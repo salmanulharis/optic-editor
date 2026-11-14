@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * On-canvas editing of the selected mask component: linear-gradient lines, radial-gradient ellipse
  * (move, resize, rotate, feather), brush painting (pen pressure, Alt erases, [ ] size), and the
@@ -208,7 +209,7 @@ export function MaskOverlay({ box }: { box: ViewBox }) {
     const mid: Pt = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
     shapes.push(line(p1), line(p2, '6 5'), line(mid, '2 6'));
     shapes.push(<line key="axis" x1={p1[0]} y1={p1[1]} x2={p2[0]} y2={p2[1]} stroke="#fff" strokeOpacity={0.5} strokeWidth={1} />);
-    shapes.push(<g key="h">{handle(p1, 'p1', 'Start: full effect')}{handle(p2, 'p2', 'End: no effect')}{handle(mid, 'move', 'Move', '#f2c94c')}</g>);
+    shapes.push(<g key="h">{handle(p1, 'p1', tr('maskOverlay.start_full_effect'))}{handle(p2, 'p2', tr('maskOverlay.end_no_effect'))}{handle(mid, 'move', tr('maskOverlay.move'), '#f2c94c')}</g>);
   } else if (c.type === 'radial') {
     const q = c.params as MaskParams['radial'];
     const a = (q.angle * Math.PI) / 180;
@@ -229,11 +230,11 @@ export function MaskOverlay({ box }: { box: ViewBox }) {
       <polyline key="o2" points={ellipse(1)} fill="none" stroke="#fff" strokeWidth={1.25} />,
       <polyline key="i" points={ellipse(inner)} fill="none" stroke="#fff" strokeOpacity={0.8} strokeWidth={1} strokeDasharray="5 4" />,
       <g key="h">
-        {handle(toCss(q.cx, q.cy), 'move', 'Move', '#f2c94c')}
-        {handle(at(q.rx * W, 0), 'rx', 'Width (Shift: circle)')}
-        {handle(at(0, q.ry * H), 'ry', 'Height')}
-        {handle(at(q.rx * W * 1.18, 0), 'rot', 'Rotate', '#9ad')}
-        {handle(at(0, -q.ry * H * inner), 'feather', 'Feather', '#ccc')}
+        {handle(toCss(q.cx, q.cy), 'move', tr('maskOverlay.move'), '#f2c94c')}
+        {handle(at(q.rx * W, 0), 'rx', tr('maskOverlay.width_shift_circle'))}
+        {handle(at(0, q.ry * H), 'ry', tr('maskOverlay.height'))}
+        {handle(at(q.rx * W * 1.18, 0), 'rot', tr('maskOverlay.rotate'), '#9ad')}
+        {handle(at(0, -q.ry * H * inner), 'feather', tr('maskOverlay.feather'), '#ccc')}
       </g>,
     );
   }
@@ -251,7 +252,7 @@ export function MaskOverlay({ box }: { box: ViewBox }) {
       onPointerUp={onUp}
       onPointerCancel={onUp}
       onPointerLeave={() => setCursor(null)}
-      aria-label="Mask editing area"
+      aria-label={tr('maskOverlay.mask_editing_area')}
     >
       {shapes}
       {painting && cursor && (

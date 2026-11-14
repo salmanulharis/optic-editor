@@ -100,7 +100,7 @@ export function ImportReportDialog({ imp }: { imp: PresetImport }) {
   if (!imp.reportOpen || !r) return null;
   return (
     <Modal title={t('lr.report.title')} onClose={imp.closeReport}>
-      <p className="mb-2 text-[11px] text-ink-dim">{t('lr.report.help')}</p>
+      <p className="mb-2 text-xs text-ink-dim">{t('lr.report.help')}</p>
       <ul className="max-h-[55vh] space-y-1.5 overflow-y-auto text-xs" aria-label={t('lr.report.title')}>
         {r.report.map((row, i) => (
           <li key={`${row.file}-${i}`} className="rounded border border-line px-2 py-1.5">
@@ -111,20 +111,20 @@ export function ImportReportDialog({ imp }: { imp: PresetImport }) {
                 {t(`lr.report.${row.status}`)}
               </span>
             </div>
-            {row.name && <div className="truncate text-[11px] text-ink-faint">{row.file}</div>}
-            {row.updated && <div className="text-[11px] text-ink-dim">{t('lr.report.updated')}</div>}
-            {row.notSaved && <div className="text-[11px] text-ink">{t('lr.report.notSaved')}</div>}
-            {row.error && <div className="text-[11px] text-ink-dim">{t(`lr.error.${row.error}`)}</div>}
-            {row.legacy && <div className="text-[11px] text-ink-dim">{t('lr.error.legacy')}</div>}
+            {row.name && <div className="truncate text-2xs text-ink-faint">{row.file}</div>}
+            {row.updated && <div className="text-2xs text-ink-dim">{t('lr.report.updated')}</div>}
+            {row.notSaved && <div className="text-2xs text-ink">{t('lr.report.notSaved')}</div>}
+            {row.error && <div className="text-2xs text-ink-dim">{t(`lr.error.${row.error}`)}</div>}
+            {row.legacy && <div className="text-2xs text-ink-dim">{t('lr.error.legacy')}</div>}
             {!!row.notConverted?.length && (
-              <div className="text-[11px] text-ink-dim">{t('lr.report.notConverted', { list: notConvertedText(row.notConverted) })}</div>
+              <div className="text-2xs text-ink-dim">{t('lr.report.notConverted', { list: notConvertedText(row.notConverted) })}</div>
             )}
           </li>
         ))}
         {r.errors.length > 0 && (
           <li className="rounded border border-line px-2 py-1.5">
             <div className="mb-0.5 text-strong">{t('lr.report.other')}</div>
-            {r.errors.map((e, i) => <div key={i} className="break-words text-[11px] text-ink-dim">{e}</div>)}
+            {r.errors.map((e, i) => <div key={i} className="break-words text-2xs text-ink-dim">{e}</div>)}
           </li>
         )}
       </ul>

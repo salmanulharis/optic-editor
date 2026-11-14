@@ -1,4 +1,7 @@
+import { t as tr } from '../../i18n';
 import { type ReactNode, useState } from 'react';
+import { IconButton } from './IconButton';
+import { useSectionGroup } from '../layout/SectionGroup';
 
 interface Props {
   title: string;
@@ -26,32 +29,39 @@ const ResetIcon = () => (
 
 /** Collapsible panel section with an on/off (eye) toggle and a reset button. */
 export function Section({ title, enabled = true, onToggle, onReset, children, defaultOpen = true }: Props) {
-  const [open, setOpen] = useState(defaultOpen);
+  const group = useSectionGroup();
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  // In a solo group only one section is open; otherwise each section keeps its own state.
+  const open = group?.solo ? group.openId === title : localOpen;
+  const setOpen = (next: boolean) => {
+    if (group?.solo) group.setOpen(next ? title : null);
+    else setLocalOpen(next);
+    if (next) group?.noteOpened(title);
+  };
   return (
     <section className="border-b border-line">
-      <header className="flex items-center gap-2 px-3 py-2">
+      <header className="flex items-center gap-1 px-3 py-1">
         <button
-          className="flex flex-1 items-center gap-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink"
+          className="flex min-h-[28px] flex-1 items-center gap-1.5 text-start text-xs font-medium uppercase tracking-wider text-ink"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
         >
-          <span className={`inline-block text-ink-faint transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
+          <span aria-hidden className={`inline-block text-ink-faint transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
           {title}
         </button>
         {onReset && (
-          <button className="text-ink-faint hover:text-ink" onClick={onReset} title={`Reset ${title}`} aria-label={`Reset ${title}`}>
+          <IconButton className="text-ink-faint hover:text-ink" onClick={onReset} label={tr('section.reset_title', { title: title })}>
             <ResetIcon />
-          </button>
+          </IconButton>
         )}
         {onToggle && (
-          <button
+          <IconButton
             className={enabled ? 'text-ink-dim hover:text-ink' : 'text-ink-faint hover:text-ink'}
             onClick={() => onToggle(!enabled)}
-            title={enabled ? `Turn ${title} off` : `Turn ${title} on`}
-            aria-pressed={enabled}
+            label={enabled ? `Turn ${title} off` : `Turn ${title} on`}
           >
             <Eye off={!enabled} />
-          </button>
+          </IconButton>
         )}
       </header>
       {open && <div className={`px-3 pb-3 ${enabled ? '' : 'opacity-50'}`}>{children}</div>}
@@ -63,11 +73,11 @@ export function Section({ title, enabled = true, onToggle, onReset, children, de
 export function SubHead({ children, onReset }: { children: ReactNode; onReset?(): void }) {
   return (
     <div className="mb-0.5 mt-2.5 flex items-center justify-between first:mt-0">
-      <span className="text-[10px] font-medium uppercase tracking-wider text-ink-faint">{children}</span>
+      <span className="text-2xs font-medium uppercase tracking-wider text-ink-faint">{children}</span>
       {onReset && (
-        <button className="text-ink-faint hover:text-ink" onClick={onReset} title="Reset" aria-label="Reset">
+        <IconButton className="text-ink-faint hover:text-ink" onClick={onReset} label={typeof children === 'string' ? `Reset ${children}` : tr('section.reset')}>
           <ResetIcon />
-        </button>
+        </IconButton>
       )}
     </div>
   );
@@ -106,7 +116,7 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
   return (
     <label className="flex cursor-pointer items-center justify-between py-1 text-xs text-ink-dim" title={hint}>
       <span>{label}</span>
-      <input type="checkbox" className="accent-[#9a9a9a]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" className="accent-control" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     </label>
   );
 }

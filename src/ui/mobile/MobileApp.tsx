@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * Touch-first layout (phones, narrow iPad windows): a full-bleed photo with a bottom toolbar
  * (Presets · Light · Color · Effects · Detail · Crop · Masks · Export) whose panels open as a bottom
@@ -5,7 +6,7 @@
  * indicator) are respected in portrait and landscape.
  */
 import { type ReactNode, useEffect, useState } from 'react';
-import { resetAll } from '../../app/presetActions';
+import { resetAllWithUndo } from '../../app/presetActions';
 import { removePhotos, setFlag, setRating } from '../../library/actions';
 import { fromFiles, reviewImport } from '../../library/importer';
 import { openRelative } from '../../library/open';
@@ -46,18 +47,19 @@ import { ImportProgress } from '../library/ImportDialog';
 import { BatchProgress } from '../library/BatchMenu';
 import { ExportProgress } from '../export/ExportProgress';
 import { PwaStatus } from '../PwaStatus';
+import { SampleButton } from '../library/SampleButton';
 
 type Tab = 'presets' | 'light' | 'color' | 'effects' | 'detail' | 'crop' | 'masks' | 'export';
 
 const TABS: Array<{ id: Tab; label: string; icon: ReactNode }> = [
-  { id: 'presets', label: 'Presets', icon: <path d="M4 6h16M4 12h16M4 18h10" /> },
-  { id: 'light', label: 'Light', icon: <><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" /></> },
-  { id: 'color', label: 'Color', icon: <><circle cx="9" cy="10" r="5" /><circle cx="15" cy="10" r="5" /><circle cx="12" cy="15" r="5" /></> },
-  { id: 'effects', label: 'Effects', icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5z" /> },
-  { id: 'detail', label: 'Detail', icon: <><path d="M3 21l7-7" /><circle cx="15" cy="9" r="6" /></> },
-  { id: 'crop', label: 'Crop', icon: <path d="M6 2v16h16M2 6h16v16" /> },
-  { id: 'masks', label: 'Masks', icon: <><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" /></> },
-  { id: 'export', label: 'Export', icon: <path d="M12 3v12M7 8l5-5 5 5M4 15v5h16v-5" /> },
+  { id: 'presets', label: tr('mobileApp.presets'), icon: <path d="M4 6h16M4 12h16M4 18h10" /> },
+  { id: 'light', label: tr('mobileApp.light'), icon: <><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" /></> },
+  { id: 'color', label: tr('mobileApp.color'), icon: <><circle cx="9" cy="10" r="5" /><circle cx="15" cy="10" r="5" /><circle cx="12" cy="15" r="5" /></> },
+  { id: 'effects', label: tr('mobileApp.effects'), icon: <path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5z" /> },
+  { id: 'detail', label: tr('mobileApp.detail'), icon: <><path d="M3 21l7-7" /><circle cx="15" cy="9" r="6" /></> },
+  { id: 'crop', label: tr('mobileApp.crop'), icon: <path d="M6 2v16h16M2 6h16v16" /> },
+  { id: 'masks', label: tr('mobileApp.masks'), icon: <><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" /></> },
+  { id: 'export', label: tr('mobileApp.export'), icon: <path d="M12 3v12M7 8l5-5 5 5M4 15v5h16v-5" /> },
 ];
 
 const Icon = ({ children }: { children: ReactNode }) => (
@@ -98,26 +100,26 @@ function MobileEditor() {
   };
   return (
     <div className="flex h-[100dvh] flex-col bg-app text-ink">
-      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 pb-1 pt-[max(4px,env(safe-area-inset-top))] pl-[max(8px,env(safe-area-inset-left))] pr-[max(8px,env(safe-area-inset-right))]">
-        <button className="rounded px-2 py-2 text-sm text-ink" onClick={() => useLibrary.getState().set({ view: 'library' })} aria-label="Back to the library">‹ Library</button>
-        <div className="min-w-0 flex-1 truncate px-1 text-center text-xs text-ink-dim">{image?.fileName ?? ''}</div>
+      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 pb-1 pt-[max(4px,env(safe-area-inset-top))] ps-[max(8px,env(safe-area-inset-left))] pe-[max(8px,env(safe-area-inset-right))]">
+        <button className="hit rounded px-2 text-sm text-ink" onClick={() => useLibrary.getState().set({ view: 'library' })} aria-label={tr('mobileApp.back_to_the_library')}>{tr('mobileApp.library')}</button>
+        <h1 className="min-w-0 flex-1 truncate px-1 text-center text-xs font-normal text-ink-dim">{image?.fileName ?? <span className="sr-only">{tr('mobileApp.optic_editor')}</span>}</h1>
         <ExportProgress />
-        <button className="rounded px-2.5 py-2 text-base disabled:opacity-30" disabled={!canUndo} onClick={() => useEdit.getState().undo()} aria-label="Undo">↶</button>
-        <button className="rounded px-2.5 py-2 text-base disabled:opacity-30" disabled={!canRedo} onClick={() => useEdit.getState().redo()} aria-label="Redo">↷</button>
-        <Menu label="⋯" ariaLabel="More" align="right" className="rounded px-2.5 py-2 text-base" items={[
-          { label: 'History', onSelect: () => { setTab(null); setSheet('history'); } },
-          { label: 'Histogram & info', onSelect: () => { setTab(null); setSheet('info'); } },
-          { label: 'Copy settings…', disabled: !image, onSelect: () => ui.set({ copyPaste: 'copy' }) },
-          { label: 'Paste settings…', disabled: !image, onSelect: () => ui.set({ copyPaste: 'paste' }) },
-          { label: 'Create virtual copy', disabled: !image, onSelect: () => useEdit.getState().createVirtualCopy() },
-          { label: 'Compare split view', disabled: !image, onSelect: () => ui.set({ compareMode: useUi.getState().compareMode === 'off' ? 'split' : 'off' }) },
-          { label: 'Previous photo', onSelect: () => openRelative(-1, list) },
-          { label: 'Next photo', onSelect: () => openRelative(1, list) },
-          { label: 'Settings', onSelect: () => ui.set({ settingsOpen: true }) },
-          { label: 'Reset all…', disabled: !image, onSelect: () => { if (confirm('Reset all adjustments? (Undo is available.)')) resetAll(); } },
+        <button className="hit rounded px-2.5 text-base disabled:opacity-30" disabled={!canUndo} onClick={() => useEdit.getState().undo()} aria-label={tr('mobileApp.undo')}>↶</button>
+        <button className="hit rounded px-2.5 text-base disabled:opacity-30" disabled={!canRedo} onClick={() => useEdit.getState().redo()} aria-label={tr('mobileApp.redo')}>↷</button>
+        <Menu label="⋯" ariaLabel={tr('mobileApp.more')} align="right" className="hit rounded px-2.5 text-base" items={[
+          { label: tr('mobileApp.history'), onSelect: () => { setTab(null); setSheet('history'); } },
+          { label: tr('mobileApp.histogram_info'), onSelect: () => { setTab(null); setSheet('info'); } },
+          { label: tr('mobileApp.copy_settings'), disabled: !image, onSelect: () => ui.set({ copyPaste: 'copy' }) },
+          { label: tr('mobileApp.paste_settings'), disabled: !image, onSelect: () => ui.set({ copyPaste: 'paste' }) },
+          { label: tr('mobileApp.create_virtual_copy'), disabled: !image, onSelect: () => useEdit.getState().createVirtualCopy() },
+          { label: tr('mobileApp.compare_split_view'), disabled: !image, onSelect: () => ui.set({ compareMode: useUi.getState().compareMode === 'off' ? 'split' : 'off' }) },
+          { label: tr('mobileApp.previous_photo'), onSelect: () => openRelative(-1, list) },
+          { label: tr('mobileApp.next_photo'), onSelect: () => openRelative(1, list) },
+          { label: tr('mobileApp.settings'), onSelect: () => ui.set({ settingsOpen: true }) },
+          { label: tr('mobileApp.reset_all'), disabled: !image, onSelect: resetAllWithUndo },
         ]} />
       </header>
-      <div className="relative min-h-0 flex-1">
+      <main className="relative min-h-0 flex-1">
         <Viewer />
         {loading && (
           <div className="absolute inset-x-6 top-1/2 z-20 -translate-y-1/2 rounded-lg border border-line bg-panel p-3 text-xs" role="status">
@@ -127,19 +129,19 @@ function MobileEditor() {
           </div>
         )}
         {error && (
-          <div className="absolute inset-x-3 bottom-3 z-30 rounded border border-[#5a3030] bg-[#2e1f1f] px-3 py-2 text-xs text-[#f0c0c0]" role="alert">
-            {error}<button className="ml-2 text-ink-faint" onClick={() => useImage.getState().clearError()} aria-label="Dismiss">✕</button>
+          <div className="absolute inset-x-3 bottom-3 z-30 rounded border border-danger/40 bg-danger-bg px-3 py-2 text-xs text-ink" role="alert">
+            {error}<button className="ms-2 text-ink-faint" onClick={() => useImage.getState().clearError()} aria-label={tr('mobileApp.dismiss')}>✕</button>
           </div>
         )}
-        {!image && !loading && <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-ink-dim">Pick a photo in the library.</div>}
-      </div>
-      {tab && <BottomSheet title={TABS.find((t) => t.id === tab)!.label} open onClose={() => setTab(null)}><SheetContent tab={tab} /></BottomSheet>}
-      {sheet === 'history' && <BottomSheet title="History" open onClose={() => setSheet(null)}><div className="h-[60dvh]"><HistoryPanel /></div></BottomSheet>}
-      {sheet === 'info' && <BottomSheet title="Histogram" open onClose={() => setSheet(null)}><HistogramView /></BottomSheet>}
-      <nav className="flex shrink-0 overflow-x-auto border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]" aria-label="Edit tools">
+        {!image && !loading && <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-ink-dim">{tr('mobileApp.pick_a_photo_in_the_library')}</div>}
+      </main>
+      {tab && <BottomSheet title={TABS.find((t) => t.id === tab)!.label} compactHeader={tab !== 'presets'} open onClose={() => setTab(null)}><SheetContent tab={tab} /></BottomSheet>}
+      {sheet === 'history' && <BottomSheet title={tr('mobileApp.history')} open onClose={() => setSheet(null)}><div className="h-[60dvh]"><HistoryPanel /></div></BottomSheet>}
+      {sheet === 'info' && <BottomSheet title={tr('mobileApp.histogram')} open onClose={() => setSheet(null)}><HistogramView /></BottomSheet>}
+      <nav className="flex shrink-0 overflow-x-auto border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] ps-[env(safe-area-inset-left)] pe-[env(safe-area-inset-right)]" aria-label={tr('mobileApp.edit_tools')}>
         {TABS.map((t) => (
           <button key={t.id} onClick={() => pick(t.id)} aria-pressed={tab === t.id} disabled={!image}
-            className={`flex min-w-[44px] flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-[10px] disabled:opacity-30 ${tab === t.id ? 'text-strong' : 'text-ink-dim'}`}>
+            className={`flex min-w-[44px] flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-2xs disabled:opacity-30 ${tab === t.id ? 'text-strong' : 'text-ink-dim'}`}>
             <Icon>{t.icon}</Icon>{t.label}
           </button>
         ))}
@@ -167,42 +169,41 @@ function MobileLibrary() {
   }, []);
   return (
     <div className="flex h-[100dvh] flex-col bg-app text-ink">
-      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 pb-1 pt-[max(4px,env(safe-area-inset-top))] pl-[max(8px,env(safe-area-inset-left))] pr-[max(8px,env(safe-area-inset-right))]">
-        <span className="px-1 text-sm font-semibold">Optic</span>
+      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-panel px-2 pb-1 pt-[max(4px,env(safe-area-inset-top))] ps-[max(8px,env(safe-area-inset-left))] pe-[max(8px,env(safe-area-inset-right))]">
+        <h1 className="px-1 text-sm font-semibold">{tr('mobileApp.optic')}<span className="sr-only">{tr('mobileApp.library_2')}</span></h1>
         <ImportProgress />
         <BatchProgress />
         <PwaStatus />
         <div className="flex-1" />
-        <label className="rounded px-2 py-2 text-xs text-ink">Import
-          <input type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files?.length) reviewImport(fromFiles(e.target.files)); e.target.value = ''; }} />
+        <label className="hit rounded px-2 text-xs text-ink">{tr('mobileApp.import')}<input type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files?.length) reviewImport(fromFiles(e.target.files)); e.target.value = ''; }} />
         </label>
-        <button className={`rounded px-2 py-2 text-xs ${filterOpen || filterActive(filter) ? 'text-strong' : 'text-ink'}`} onClick={() => lib.set({ filterOpen: !filterOpen })} aria-pressed={filterOpen}>Filter</button>
+        <button className={`hit rounded px-2 text-xs ${filterOpen || filterActive(filter) ? 'text-strong' : 'text-ink'}`} onClick={() => lib.set({ filterOpen: !filterOpen })} aria-pressed={filterOpen}>{tr('mobileApp.filter')}</button>
         <BatchMenu />
-        <button className="rounded px-2 py-2 text-sm text-ink-dim" aria-label="Settings" onClick={() => useUi.getState().set({ settingsOpen: true })}>⚙</button>
+        <button className="hit rounded px-2 text-sm text-ink-dim" aria-label={tr('mobileApp.settings')} onClick={() => useUi.getState().set({ settingsOpen: true })}>⚙</button>
       </header>
       {filterOpen && <div className="max-h-[45dvh] overflow-y-auto"><FilterBar /></div>}
+      <main className="flex min-h-0 flex-1 flex-col">
       {total === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-ink-dim">
-          Your library is empty.
-          <label className="rounded bg-accent px-4 py-2 text-sm font-medium text-on-accent">Import photos
-            <input type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files?.length) reviewImport(fromFiles(e.target.files)); e.target.value = ''; }} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-ink-dim">{tr('mobileApp.your_library_is_empty')}<label className="rounded bg-accent px-4 py-2 text-sm font-medium text-on-accent">{tr('mobileApp.import_photos')}<input type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files?.length) reviewImport(fromFiles(e.target.files)); e.target.value = ''; }} />
           </label>
-          <span className="text-xs text-ink-faint">Or share photos to Optic from the Photos app.</span>
+          <span className="text-xs text-ink-faint">{tr('mobileApp.or_share_photos_to_optic_from')}</span>
+          <SampleButton className="mt-2" />
         </div>
       ) : <Grid touch />}
+      </main>
       {nSel > 0 && (
-        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 py-2 pb-[max(8px,env(safe-area-inset-bottom))] text-xs" role="toolbar" aria-label="Selection">
-          <span className="text-ink-dim">{nSel} selected</span>
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 py-2 pb-[max(8px,env(safe-area-inset-bottom))] text-xs" role="toolbar" aria-label={tr('mobileApp.selection')}>
+          <span className="text-ink-dim">{tr('mobileApp.n_selected', { n: nSel })}</span>
           {p && <Stars n={p.rating} onSet={(r) => void setRating(r)} size="text-lg" />}
-          <button className="rounded px-2 py-1" onClick={() => void setFlag(p?.flag === 1 ? 0 : 1)} aria-label="Pick">⚑</button>
-          <button className="rounded px-2 py-1" onClick={() => void setFlag(p?.flag === -1 ? 0 : -1)} aria-label="Reject">✕</button>
+          <button className="hit rounded px-2" onClick={() => void setFlag(p?.flag === 1 ? 0 : 1)} aria-label={tr('mobileApp.pick')}>⚑</button>
+          <button className="hit rounded px-2" onClick={() => void setFlag(p?.flag === -1 ? 0 : -1)} aria-label={tr('mobileApp.reject')}>✕</button>
           <div className="flex-1" />
-          <button className="rounded px-2 py-1" onClick={() => setInfo(true)} disabled={!active}>Info</button>
-          <button className="rounded px-2 py-1 text-[#e09090]" onClick={() => void removePhotos(targetIds())}>Remove</button>
-          <button className="rounded px-2 py-1" onClick={() => lib.set({ selection: new Set() })}>Done</button>
+          <button className="hit rounded px-2" onClick={() => setInfo(true)} disabled={!active}>{tr('mobileApp.info')}</button>
+          <button className="hit rounded px-2 text-danger" onClick={() => void removePhotos(targetIds())}>{tr('mobileApp.remove')}</button>
+          <button className="hit rounded px-2" onClick={() => lib.set({ selection: new Set() })}>{tr('mobileApp.done')}</button>
         </div>
       )}
-      {info && <BottomSheet title="Info" open onClose={() => setInfo(false)}><div className="[&>aside]:w-full [&>aside]:border-0"><InfoPanel /></div></BottomSheet>}
+      {info && <BottomSheet title={tr('mobileApp.info')} open onClose={() => setInfo(false)}><div className="[&>aside]:w-full [&>aside]:border-0"><InfoPanel /></div></BottomSheet>}
     </div>
   );
 }

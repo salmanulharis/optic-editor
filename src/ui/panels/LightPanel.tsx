@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 import { autoTone } from '../../app/actions';
 import { defaultRecipe } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
@@ -19,41 +20,41 @@ export function LightPanel() {
       onChange={(v) => s.set({ [key]: v })} onCommit={s.commit} />
   );
   const dropper = (t: 'blackPoint' | 'whitePoint', label: string) => (
-    <ToolButton title={`${label} dropper`} active={tool === t} onClick={() => useUi.getState().set({ tool: tool === t ? 'none' : t })}>
+    <ToolButton title={tr('lightPanel.label_dropper', { label: label })} active={tool === t} onClick={() => useUi.getState().set({ tool: tool === t ? 'none' : t })}>
       {label}
     </ToolButton>
   );
 
   return (
     <Section
-      title="Light"
+      title={tr('lightPanel.light')}
       enabled={l.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('light', on)}
       onReset={() => s.apply({ ...defaultRecipe().light, deband: l.deband, deblock: l.deblock })}
     >
       <div className="mb-2 flex gap-1.5">
-        <ToolButton title="Auto tone (exposure, contrast, whites, blacks)" onClick={autoTone}>Auto</ToolButton>
-        {dropper('blackPoint', 'Black pt')}
-        {dropper('whitePoint', 'White pt')}
+        <ToolButton title={tr('lightPanel.auto_tone_exposure_contrast_whites_blacks')} onClick={autoTone}>{tr('lightPanel.auto')}</ToolButton>
+        {dropper('blackPoint', tr('lightPanel.black_pt'))}
+        {dropper('whitePoint', tr('lightPanel.white_pt'))}
       </div>
-      <Slider label="Exposure" value={l.exposure} min={-5} max={5} step={0.05} decimals={2} defaultValue={0}
+      <Slider label={tr('lightPanel.exposure')} value={l.exposure} min={-5} max={5} step={0.05} decimals={2} defaultValue={0}
         onChange={(v) => s.set({ exposure: v })} onCommit={s.commit} />
-      {tone('contrast', 'Contrast')}
-      {tone('highlights', 'Highlights')}
-      {tone('shadows', 'Shadows')}
-      {tone('whites', 'Whites')}
-      {tone('blacks', 'Blacks')}
+      {tone('contrast', tr('lightPanel.contrast'))}
+      {tone('highlights', tr('lightPanel.highlights'))}
+      {tone('shadows', tr('lightPanel.shadows'))}
+      {tone('whites', tr('lightPanel.whites'))}
+      {tone('blacks', tr('lightPanel.blacks'))}
       {image && !image.isRaw && (
         <div className="mt-2 border-t border-line pt-1">
           <Toggle
-            label={`Debanding${l.deband === 'auto' ? ' (auto)' : ''}`}
-            hint="Edge-aware smoothing of 8-bit gradients before strong edits"
+            label={l.deband === 'auto' ? tr('lightPanel.debanding_auto') : tr('lightPanel.debanding')}
+            hint={tr('lightPanel.edge_aware_smoothing_of_8_bit')}
             checked={debandOn}
             onChange={(v) => s.apply({ deband: v === lowBit ? 'auto' : v ? 'on' : 'off' })}
           />
           <Toggle
-            label="JPEG artifact reduction"
-            hint="Mild deblocking for heavily compressed images"
+            label={tr('lightPanel.jpeg_artifact_reduction')}
+            hint={tr('lightPanel.mild_deblocking_for_heavily_compressed_images')}
             checked={l.deblock}
             onChange={(v) => s.apply({ deblock: v })}
           />

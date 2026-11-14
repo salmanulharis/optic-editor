@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 import { defaultRecipe } from '../../recipe/schema';
 import { useEdit } from '../../state/editStore';
 import { Section, Toggle } from '../controls/Section';
@@ -11,18 +12,18 @@ export function PresencePanel() {
   const s = bindSection('presence');
   return (
     <Section
-      title="Presence"
+      title={tr('presencePanel.presence')}
       enabled={p.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('presence', on)}
       onReset={() => s.apply({ ...defaultRecipe().presence })}
     >
-      <Slider label="Vibrance" value={p.vibrance} min={-100} max={100} step={1} defaultValue={0} track={SAT_TRACK}
+      <Slider label={tr('presencePanel.vibrance')} value={p.vibrance} min={-100} max={100} step={1} defaultValue={0} track={SAT_TRACK}
         onChange={(v) => s.set({ vibrance: v })} onCommit={s.commit} />
-      <Slider label="Saturation" value={p.saturation} min={-100} max={100} step={1} defaultValue={0} track={SAT_TRACK}
+      <Slider label={tr('presencePanel.saturation')} value={p.saturation} min={-100} max={100} step={1} defaultValue={0} track={SAT_TRACK}
         onChange={(v) => s.set({ saturation: v })} onCommit={s.commit} />
       <Toggle
-        label="Protect skin tones"
-        hint="Keep skin hues stable under saturation and colour-mixer changes"
+        label={tr('presencePanel.protect_skin_tones')}
+        hint={tr('presencePanel.keep_skin_hues_stable_under_saturation')}
         checked={p.protectSkin}
         onChange={(v) => s.apply({ protectSkin: v })}
       />

@@ -15,7 +15,8 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "models:fetch": "node scripts/fetch-models.mjs",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "sample:fetch": "node scripts/fetch-sample.mjs"
   },
   "dependencies": {
     "@jsquash/avif": "^2.1.1",

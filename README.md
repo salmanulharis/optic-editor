@@ -55,6 +55,7 @@ npm run test:seams     # tiled vs untiled export, every spatial effect and mask 
 npm run bench          # preview frame rate and 48 MP export time
 npm run models:fetch   # optional: download the AI models into public/models (see below)
 npm run icons          # regenerate the PWA icons and splash screens from public/icons/optic.svg
+npm run sample:fetch   # optional: the CC0 sample RAW for "Try a sample photo" (public/samples)
 ```
 
 The first end-to-end test uses `sample-files/IMG_7040.jpeg` (a ProRAW DNG kept locally). It is
@@ -80,7 +81,7 @@ Cross-Origin-Embedder-Policy: require-corp
 
 ### Your own server (GitHub Actions)
 
-`.github/workflows/deploy.yml` runs the unit tests, builds, and uploads `dist/` over SSH (rsync)
+`.github/workflows/deploy.yml` runs the unit tests, fetches the optional sample photo, builds, and uploads `dist/` over SSH (rsync)
 when a version tag is pushed (`1.0.1` or `v1.0.1`); ordinary pushes deploy nothing:
 
 ```bash
@@ -134,6 +135,15 @@ them from your own deployment instead, run `npm run models:fetch` before `npm ru
 them in `public/models/` (about 200 MB, mostly the sky model), and the app tries `/models/<file>`
 first.
 
+### Sample photo
+
+Empty libraries and the first-launch tour offer **Try a sample photo**: a public-domain (CC0)
+iPhone RAW from [raw.pixls.us](https://raw.pixls.us/). Run `npm run sample:fetch` before
+`npm run build` to include it (about 10 MB in `public/samples/`, downloaded by the browser only when
+someone clicks the button, then kept for offline use). Without it the button is not shown. The
+browser can't fetch the file from raw.pixls.us directly, because that site doesn't send the CORS
+headers a cross-origin-isolated page needs; hence the copy.
+
 ## Browser support
 
 - **Chrome and Edge** (desktop): tested, including the automated test suite. Everything works,
@@ -142,8 +152,12 @@ first.
 - **Safari on macOS, iPhone and iPad**: designed for (touch layout, OPFS through synchronous access
   handles, ZIP export, iOS memory limits, splash screens), but not yet verified on real devices.
   Safari has no File System Access, so originals are always copied into Optic and batch exports
-  download as a ZIP.
-- **Firefox**: not tested.
+  download as a ZIP. A smoke test (import, edit, export) passes in Playwright's WebKit build of the
+  production app, which also covers browsers without OffscreenCanvas or OPFS: canvas work falls back
+  to the main thread, and without OPFS imported photos are kept for the session only (the import
+  dialog says so; their edits are still saved).
+- **Firefox** (desktop): the same smoke test passes. Firefox has no File System Access, so it
+  behaves like Safari for import and export.
 
 WebGL 2 with float render targets (`EXT_color_buffer_float`) is required.
 

@@ -37,6 +37,8 @@ PNG, TIFF, WebP and AVIF.
    - **Apply during import**: a preset (with an amount), a collection, keywords.
 4. Imports run in the background. The app stays usable, and photos appear in the grid one by one.
    Each one first shows the camera's own preview, then Optic's render once it is ready.
+5. No photo at hand? **Try a sample photo** (in an empty library and at the end of the welcome
+   tour) opens a public-domain iPhone RAW, if your Optic deployment includes it.
 
 ## The library
 
@@ -97,6 +99,23 @@ Press **G** for the grid. Double-click a photo (or press **E** / Enter) to edit 
 
 The editor shows the photo with the presets and history on the left, the adjustment panels on the
 right and the filmstrip at the bottom. In the filmstrip, ← / → moves to the previous or next photo.
+
+- **More room for the photo**: press **F** (or the panels button next to Undo / Redo) to hide both
+  side panels; press it again to bring them back. Optic remembers the choice. Crop (R) and Masks (M)
+  bring the panels back, because they need them.
+- **Narrow windows** (less than 1024 px wide): the Presets and History column becomes a drawer;
+  open it with **Presets** in the top bar. Below 1280 px, Open, Batch, Settings and the shortcuts
+  list are in the **⋯** menu.
+- **One section at a time** (top of the adjustments column): opening a panel section closes the
+  others, so the column stays short.
+- **Feedback without interruptions**: actions that can be undone happen straight away and show a
+  short message with **Undo** (for example *Reset all*). Actions that delete something for good
+  ask first, in Optic's own dialog; *Cancel* is selected, so pressing Enter never deletes by
+  accident.
+- **Tooltips** explain every icon button. They also appear when you move to the button with the
+  keyboard, and with a long press on touch screens. Esc closes them.
+- **Versions** (left of the filmstrip): the original and its virtual copies. Click to switch;
+  **F2** (or a double click on the name) renames; ⇆ compares side by side.
 
 - **Every change is undoable** (Ctrl/Cmd+Z). The **History** tab lists each step by name, and you
   can click any step to go back to it. **Snapshots** save a named version of the edit.
@@ -307,6 +326,15 @@ On a phone, and on an iPad in a narrow window, Optic uses a touch layout:
 - Nothing leaves your device. The only network requests are the app itself and, the first time,
   the AI model files.
 
+## Appearance
+
+**Settings → General**:
+- **Theme**: Dark (default), Darker, Light neutral grey, or **Follow the system** (dark or light,
+  switching with your operating system). All themes are neutral grey, so they never tint how you
+  judge colour.
+- **Reduce motion** follows the system setting, or can be forced on or off.
+- **Language**: Optic reloads to apply a change (your work is saved continuously).
+
 ## Keyboard shortcuts
 
 Press **?** in the app for the complete, searchable list. The most used:
@@ -328,6 +356,7 @@ Press **?** in the app for the complete, searchable list. The most used:
 | Ctrl/Cmd+E | Export |
 | Ctrl/Cmd+Shift+C / V | Copy / paste settings |
 | Ctrl/Cmd+, | Settings |
+| F | Hide / show the side panels |
 
 ## Tips: RAW vs JPEG
 

@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 /**
  * Preset browser (left sidebar): applied-preset header with Amount, search, grid/list toggle,
  * collapsible groups, thumbnails on the current photo, hover / arrow-key preview, right-click menu.
@@ -22,6 +23,8 @@ import { useUi } from '../../state/uiStore';
 import { Slider } from '../controls/Slider';
 import { ImportReportDialog, ImportStatus, PRESET_IMPORT_ACCEPT, usePresetImport } from './ImportReport';
 import { useThumbnail } from './thumbnails';
+import { confirmDialog, promptDialog } from '../feedback/dialogs';
+import { IconButton } from '../controls/IconButton';
 
 interface Menu { x: number; y: number; preset: Preset }
 
@@ -82,24 +85,24 @@ export function PresetBrowser() {
       }}>
       <AppliedHeader />
       <div className="flex items-center gap-1 border-b border-line px-2 py-1.5">
-        <input className="input min-w-0 flex-1" placeholder="Search presets" value={q} onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => e.stopPropagation()} aria-label="Search presets" />
-        <button title={view === 'grid' ? 'Compact list' : 'Thumbnail grid'} className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-hover"
+        <input className="input min-w-0 flex-1" placeholder={tr('presetBrowser.search_presets')} value={q} onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()} aria-label={tr('presetBrowser.search_presets')} />
+        <button title={view === 'grid' ? tr('presetBrowser.compact_list') : tr('presetBrowser.thumbnail_grid')} className="rounded px-1.5 py-1 text-xs text-ink-dim hover:bg-hover"
           onClick={() => useUi.getState().set({ presetView: view === 'grid' ? 'list' : 'grid' })}>
           {view === 'grid' ? '☰' : '▦'}
         </button>
       </div>
-      <div className="flex items-center gap-1 border-b border-line px-2 py-1 text-[11px]">
+      <div className="flex items-center gap-1 border-b border-line px-2 py-1 text-2xs">
         <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!hasImage}
-          onClick={() => useUi.getState().set({ createPresetOpen: true })}>+ Create</button>
+          onClick={() => useUi.getState().set({ createPresetOpen: true })}>{tr('presetBrowser.create')}</button>
         <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={imp.busy}
           title={t('presets.import.title')} aria-label={t('presets.import.aria')} onClick={() => importRef.current?.click()}>{t('presets.import')}</button>
         <button className="rounded px-1.5 py-0.5 text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40" disabled={!user.length}
-          onClick={() => download('my-presets.opticpack', buildPack(user) as BlobPart, 'application/zip')}>Export pack</button>
+          onClick={() => download('my-presets.opticpack', buildPack(user) as BlobPart, 'application/zip')}>{tr('presetBrowser.export_pack')}</button>
         <input ref={importRef} type="file" multiple accept={PRESET_IMPORT_ACCEPT} className="hidden" tabIndex={-1} aria-hidden
           onChange={(e) => { const f = [...(e.target.files ?? [])]; if (f.length) void imp.run(f); e.target.value = ''; }} />
       </div>
-      <ImportStatus imp={imp} className="border-b border-line px-2 py-1 text-[10px] text-ink-dim" />
+      <ImportStatus imp={imp} className="border-b border-line px-2 py-1 text-2xs text-ink-dim" />
       <ImportReportDialog imp={imp} />
       {dragging && (
         <div className="pointer-events-none absolute inset-1 z-20 flex items-center justify-center rounded border-2 border-dashed border-edge bg-panel/90 px-4 text-center text-xs text-ink">
@@ -113,32 +116,31 @@ export function PresetBrowser() {
           const isClosed = closed[name] ?? (name !== 'Favorites' && name !== 'Hasselblad-inspired' && !q);
           return (
             <section key={name} className="border-b border-line">
-              <button className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-ink-dim hover:text-ink"
-                onClick={() => setClosed({ ...closed, [name]: !isClosed })}>
-                <span className={`text-ink-faint transition-transform ${isClosed ? '' : 'rotate-90'}`}>▸</span>
+              <button className="flex w-full items-center gap-1.5 px-2 py-1.5 text-start text-2xs font-medium uppercase tracking-wider text-ink-dim hover:text-ink"
+                aria-expanded={!isClosed} onClick={() => setClosed({ ...closed, [name]: !isClosed })}>
+                <span aria-hidden className={`text-ink-faint transition-transform ${isClosed ? '' : 'rotate-90'}`}>▸</span>
                 <span className="truncate">{name}</span>
-                <span className="ml-auto text-ink-faint">{items.length}</span>
+                <span className="ms-auto text-ink-faint">{items.length}</span>
               </button>
               {!isClosed && (
                 items.length ? (
                   <div className={view === 'grid' ? 'grid grid-cols-2 gap-1.5 px-2 pb-2' : 'pb-1'}>
                     {items.map((p) => <PresetTile key={`${name}-${p.id}`} preset={p} view={view} fav={favorites.includes(p.id)} onMenu={setMenu} />)}
                   </div>
-                ) : <p className="px-3 pb-2 text-[11px] text-ink-faint">{t('presets.import.empty')}</p>
+                ) : <p className="px-3 pb-2 text-xs text-ink-faint">{t('presets.import.empty')}</p>
               )}
             </section>
           );
         })}
         <section className="border-b border-line">
-          <button className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-ink-dim hover:text-ink"
-            onClick={() => setClosed({ ...closed, luts: !(closed.luts ?? true) })}>
-            <span className={`text-ink-faint transition-transform ${(closed.luts ?? true) ? '' : 'rotate-90'}`}>▸</span>
-            My LUTs <span className="ml-auto text-ink-faint">{luts.length}</span>
+          <button className="flex w-full items-center gap-1.5 px-2 py-1.5 text-start text-2xs font-medium uppercase tracking-wider text-ink-dim hover:text-ink"
+            aria-expanded={!(closed.luts ?? true)} onClick={() => setClosed({ ...closed, luts: !(closed.luts ?? true) })}>
+            <span aria-hidden className={`text-ink-faint transition-transform ${(closed.luts ?? true) ? '' : 'rotate-90'}`}>▸</span>{tr('presetBrowser.my_luts')} <span className="ms-auto text-ink-faint">{luts.length}</span>
           </button>
           {!(closed.luts ?? true) && (
             <div className="pb-1">
               {luts.map((l) => (
-                <button key={l.id} className="block w-full truncate px-3 py-1 text-left text-xs text-ink-dim hover:bg-hover hover:text-ink"
+                <button key={l.id} className="block w-full truncate px-3 py-1 text-start text-xs text-ink-dim hover:bg-hover hover:text-ink"
                   onClick={() => useEdit.getState().apply((r) => ({ ...r, lut: { ...r.lut, enabled: true, id: l.id } }))}>
                   {l.name} <span className="text-ink-faint">{l.size}³</span>
                 </button>
@@ -158,9 +160,9 @@ function PresetTile({ preset, view, fav, onMenu }: { preset: Preset; view: 'grid
   const applied = useEdit((s) => s.recipe.appliedPreset?.id === preset.id);
   const hasImage = useImage((s) => !!s.image);
   const star = (
-    <button title={fav ? 'Remove from favorites' : 'Add to favorites'} aria-label="Favorite"
-      className={`text-xs ${fav ? 'text-[#e8c860]' : 'text-ink-faint opacity-0 group-hover:opacity-100'}`}
-      onClick={(e) => { e.stopPropagation(); usePresets.getState().toggleFavorite(preset.id); }}>★</button>
+    <IconButton label={fav ? tr('presetBrowser.favorite_remove', { name: preset.name }) : tr('presetBrowser.favorite_add', { name: preset.name })} aria-pressed={fav}
+      className={`text-xs ${fav ? 'text-star' : 'text-ink-faint opacity-0 focus:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100'}`}
+      onClick={(e) => { e.stopPropagation(); usePresets.getState().toggleFavorite(preset.id); }}>★</IconButton>
   );
   const common = {
     ref,
@@ -178,7 +180,7 @@ function PresetTile({ preset, view, fav, onMenu }: { preset: Preset; view: 'grid
     return (
       <div {...common} className={`group flex cursor-pointer items-center gap-2 px-3 py-1 text-xs outline-none hover:bg-hover focus:bg-hover ${applied ? 'text-strong' : 'text-ink-dim'}`}>
         <span className="truncate">{preset.name}</span>
-        <span className="ml-auto">{star}</span>
+        <span className="ms-auto">{star}</span>
       </div>
     );
   }
@@ -186,9 +188,9 @@ function PresetTile({ preset, view, fav, onMenu }: { preset: Preset; view: 'grid
     <div {...common} className={`group cursor-pointer rounded outline-none focus:ring-1 focus:ring-edge ${applied ? 'ring-1 ring-ink' : ''}`}>
       <div className="relative aspect-[4/3] overflow-hidden rounded bg-sunk">
         {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <div className="h-full w-full animate-pulse bg-sunk" />}
-        <span className="absolute right-1 top-0.5">{star}</span>
+        <span className="absolute end-1 top-0.5">{star}</span>
       </div>
-      <div className="truncate px-0.5 pt-0.5 text-[11px] text-ink-dim group-hover:text-ink">{preset.name}</div>
+      <div className="truncate px-0.5 pt-0.5 text-2xs text-ink-dim group-hover:text-ink">{preset.name}</div>
     </div>
   );
 }
@@ -197,21 +199,24 @@ function ContextMenu({ menu, close }: { menu: Menu; close(): void }) {
   const p = menu.preset;
   const store = usePresets.getState();
   const item = (label: string, fn: () => void, danger = false) => (
-    <button className={`block w-full px-3 py-1.5 text-left text-xs hover:bg-active ${danger ? 'text-[#f0a0a0]' : 'text-ink'}`}
+    <button className={`block w-full px-3 py-1.5 text-start text-xs hover:bg-active ${danger ? 'text-danger' : 'text-ink'}`}
       onClick={(e) => { e.stopPropagation(); fn(); close(); }}>{label}</button>
   );
   return (
     <div className="fixed z-50 min-w-[180px] rounded border border-line bg-raise py-1 shadow-xl" style={{ left: menu.x, top: menu.y }}
       onClick={(e) => e.stopPropagation()}>
-      {item('Apply', () => applyPresetToEdit(p))}
-      {item('Apply at 50%', () => applyPresetToEdit(p, 50))}
-      {item('Duplicate as my preset', () => void store.saveUser({ ...structuredClone(p), id: `user-${crypto.randomUUID().slice(0, 8)}`, name: `${p.name} copy`, group: 'My Presets', builtin: false }))}
-      {!p.builtin && item('Rename…', () => {
-        const name = prompt('Preset name', p.name);
-        if (name?.trim()) void store.saveUser({ ...p, name: name.trim() });
+      {item(tr('presetBrowser.apply'), () => applyPresetToEdit(p))}
+      {item(tr('presetBrowser.apply_at_50'), () => applyPresetToEdit(p, 50))}
+      {item(tr('presetBrowser.duplicate_as_my_preset'), () => void store.saveUser({ ...structuredClone(p), id: `user-${crypto.randomUUID().slice(0, 8)}`, name: `${p.name} copy`, group: 'My Presets', builtin: false }))}
+      {!p.builtin && item(tr('presetBrowser.rename_2'), () => {
+        void promptDialog({ title: tr('presetBrowser.rename_preset'), label: tr('presetBrowser.preset_name'), initial: p.name, confirmLabel: tr('presetBrowser.rename') })
+          .then((name) => { if (name) void store.saveUser({ ...p, name }); });
       })}
-      {item('Export JSON', () => download(`${p.name.replace(/[^\w.-]+/g, '_')}.json`, presetToJson(p), 'application/json'))}
-      {!p.builtin && item('Delete', () => { if (confirm(`Delete preset "${p.name}"?`)) void store.deleteUser(p.id); }, true)}
+      {item(tr('presetBrowser.export_json'), () => download(`${p.name.replace(/[^\w.-]+/g, '_')}.json`, presetToJson(p), 'application/json'))}
+      {!p.builtin && item(tr('presetBrowser.delete'), () => {
+        void confirmDialog({ title: tr('presetBrowser.delete_the_preset_name', { name: p.name }), message: tr('presetBrowser.photos_it_was_applied_to_keep'), confirmLabel: tr('presetBrowser.delete_preset'), danger: true })
+          .then((ok) => { if (ok) void store.deleteUser(p.id); });
+      }, true)}
     </div>
   );
 }
@@ -221,18 +226,18 @@ function AppliedHeader() {
   const applied = useEdit((s) => s.recipe.appliedPreset);
   const edited = useEdit((s) => (s.recipe.appliedPreset ? presetEdited(s.recipe) : false));
   if (!applied) {
-    return <div className="border-b border-line px-3 py-2 text-[11px] text-ink-faint">No preset applied — hover to preview, click to apply.</div>;
+    return <div className="border-b border-line px-3 py-2 text-2xs text-ink-faint">{tr('presetBrowser.no_preset_applied_hover_to_preview')}</div>;
   }
   return (
     <div className="border-b border-line px-3 py-2">
       <div className="flex items-center gap-1">
         <span className="min-w-0 truncate rounded bg-hover px-1.5 py-0.5 text-xs text-strong" title={applied.name}>
-          {applied.name}{edited ? ' (edited)' : ''}
+          {applied.name}{edited ? tr('presetBrowser.edited') : ''}
         </span>
-        <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-hover hover:text-ink" onClick={resetToPreset} title="Discard manual changes to the preset's settings">Reset</button>
-        <button className="rounded px-1.5 py-0.5 text-[11px] text-ink-dim hover:bg-hover hover:text-ink" onClick={removeAppliedPreset} title="Restore the settings from before the preset">Remove</button>
+        <button className="ms-auto rounded px-1.5 py-0.5 text-2xs text-ink-dim hover:bg-hover hover:text-ink" onClick={resetToPreset} title={tr('presetBrowser.discard_manual_changes_to_the_preset')}>{tr('presetBrowser.reset')}</button>
+        <button className="rounded px-1.5 py-0.5 text-2xs text-ink-dim hover:bg-hover hover:text-ink" onClick={removeAppliedPreset} title={tr('presetBrowser.restore_the_settings_from_before_the')}>{tr('presetBrowser.remove')}</button>
       </div>
-      <Slider label="Amount" value={applied.amount} min={0} max={200} step={1} defaultValue={100}
+      <Slider label={tr('presetBrowser.amount')} value={applied.amount} min={0} max={200} step={1} defaultValue={100}
         format={(v) => `${Math.round(v)}%`} onChange={setAmountLive} onCommit={commitAmount} />
     </div>
   );

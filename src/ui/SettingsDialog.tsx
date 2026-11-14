@@ -1,3 +1,4 @@
+import { t as tr } from '../i18n';
 /**
  * Settings: appearance, defaults for new photos, default export preset, preview quality, graphics
  * information, storage (usage, persistence, cache clean-up that never touches originals) and the
@@ -18,13 +19,15 @@ import { useLibrary } from '../state/libraryStore';
 import { useUi } from '../state/uiStore';
 import { dbGetAll, dbDelete } from '../storage/db';
 import { useFocusTrap } from './focusTrap';
+import { confirmDialog } from './feedback/dialogs';
+import { IconButton } from './controls/IconButton';
 
 const fmt = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.round(n / 1e3)} KB`);
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-5">
-      <h3 className="mb-2 border-b border-line pb-1 text-[11px] font-medium uppercase tracking-wider text-ink-faint">{title}</h3>
+      <h3 className="mb-2 border-b border-line pb-1 text-2xs font-medium uppercase tracking-wider text-ink-faint">{title}</h3>
       <div className="space-y-2 text-xs text-ink-dim">{children}</div>
     </section>
   );
@@ -46,7 +49,7 @@ function DefaultsEditor({ which }: { which: 'raw' | 'nonRaw' }) {
   const num = (k: 'sharpen' | 'colorNr' | 'lumNr', max: number, label: string) => (
     <Row label={label} htmlFor={`${which}-${k}`}>
       <input id={`${which}-${k}`} type="range" min={0} max={max} value={d[k]} className="w-32 accent-edge" onChange={(e) => set({ [k]: +e.target.value })} />
-      <span className="w-8 text-right tabular-nums text-ink">{d[k]}</span>
+      <span className="w-8 text-end tabular-nums text-ink">{d[k]}</span>
     </Row>
   );
   return (
@@ -55,7 +58,7 @@ function DefaultsEditor({ which }: { which: 'raw' | 'nonRaw' }) {
       {num('sharpen', 150, t('settings.sharpen'))}
       {num('colorNr', 100, t('settings.colorNr'))}
       {num('lumNr', 100, t('settings.lumNr'))}
-      <label className="flex items-center gap-2"><input type="checkbox" checked={d.lensAuto} onChange={(e) => set({ lensAuto: e.target.checked })} /> {t('settings.lensAuto')}</label>
+      <label className="mt-2 flex min-h-[24px] items-center gap-2"><input type="checkbox" checked={d.lensAuto} onChange={(e) => set({ lensAuto: e.target.checked })} /> {t('settings.lensAuto')}</label>
     </div>
   );
 }
@@ -68,22 +71,22 @@ function GpuInfo() {
     const rows: Array<[string, string]> = [];
     if (gl) {
       const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-      rows.push(['Renderer', dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : String(gl.getParameter(gl.RENDERER))]);
-      rows.push(['API', 'WebGL 2 (float pipeline)']);
-      rows.push(['Max texture', `${r.caps.maxTextureSize} px`]);
-      rows.push(['Float filtering', r.caps.floatLinear ? 'yes' : 'no (texelFetch fallback)']);
-      rows.push(['Wide-gamut display', r.caps.p3 ? 'Display P3' : 'sRGB']);
-    } else rows.push(['Renderer', 'Open a photo to see GPU details']);
-    rows.push(['WebGPU', 'gpu' in navigator ? 'available' : 'not available']);
-    rows.push(['Cross-origin isolated', crossOriginIsolated ? 'yes (threads, shared memory)' : 'no']);
-    rows.push(['CPU threads', String(navigator.hardwareConcurrency || '?')]);
+      rows.push([tr('settingsDialog.renderer'), dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : String(gl.getParameter(gl.RENDERER))]);
+      rows.push([tr('settingsDialog.api'), 'WebGL 2 (float pipeline)']);
+      rows.push([tr('settingsDialog.max_texture'), `${r.caps.maxTextureSize} px`]);
+      rows.push([tr('settingsDialog.float_filtering'), r.caps.floatLinear ? tr('settingsDialog.yes') : tr('settingsDialog.no_texelfetch_fallback')]);
+      rows.push([tr('settingsDialog.wide_gamut_display'), r.caps.p3 ? 'Display P3' : 'sRGB']);
+    } else rows.push([tr('settingsDialog.renderer'), tr('settingsDialog.open_a_photo_to_see_gpu')]);
+    rows.push([tr('settingsDialog.webgpu'), 'gpu' in navigator ? tr('settingsDialog.available') : tr('settingsDialog.not_available')]);
+    rows.push([tr('settingsDialog.cross_origin_isolated'), crossOriginIsolated ? tr('settingsDialog.yes_threads_shared_memory') : tr('settingsDialog.no')]);
+    rows.push([tr('settingsDialog.cpu_threads'), String(navigator.hardwareConcurrency || '?')]);
     const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    if (mem) rows.push(['Device memory', `≥ ${mem} GB`]);
+    if (mem) rows.push([tr('settingsDialog.device_memory'), `≥ ${mem} GB`]);
     setInfo(rows);
   }, []);
   return (
     <table className="w-full"><tbody>
-      {info.map(([k, v]) => <tr key={k}><td className="w-40 py-0.5 pr-2 text-ink-faint">{k}</td><td className="break-all text-ink">{v}</td></tr>)}
+      {info.map(([k, v]) => <tr key={k}><td className="w-40 py-0.5 pe-2 text-ink-faint">{k}</td><td className="break-all text-ink">{v}</td></tr>)}
     </tbody></table>
   );
 }
@@ -107,7 +110,7 @@ function StoragePanel() {
   };
   useEffect(() => { void refresh(); void requestPersistence(); }, []);
   const clearPreviews = async () => {
-    if (!confirm('Clear all cached previews? They are rendered again in the background. Originals and edits are kept.')) return;
+    if (!(await confirmDialog({ title: tr('settingsDialog.clear_the_preview_cache'), message: tr('settingsDialog.previews_are_rendered_again_in_the'), confirmLabel: tr('settingsDialog.clear_previews') }))) return;
     await removeEntry('previews');
     const lib = useLibrary.getState();
     await lib.patch(lib.photos.map((p) => p.id), () => ({ thumb: 0, preview: 0 }));
@@ -115,13 +118,13 @@ function StoragePanel() {
     void refresh();
   };
   const clearModels = async () => {
-    if (!confirm('Remove the downloaded AI models? They download again the next time an AI mask is used.')) return;
+    if (!(await confirmDialog({ title: tr('settingsDialog.remove_the_downloaded_ai_models'), message: tr('settingsDialog.they_download_again_the_next_time'), confirmLabel: tr('settingsDialog.remove_models') }))) return;
     await caches.delete(MODEL_CACHE);
     await caches.delete('optic-model-files');
     void refresh();
   };
   const clearMasks = async () => {
-    if (!confirm('Clear computed AI masks? They are computed again when a photo with AI masks is opened.')) return;
+    if (!(await confirmDialog({ title: tr('settingsDialog.clear_computed_ai_masks'), message: tr('settingsDialog.they_are_computed_again_when_a'), confirmLabel: tr('settingsDialog.clear_masks') }))) return;
     for (const m of await dbGetAll<{ key: string }>('aimasks')) await dbDelete('aimasks', m.key);
     for (const m of maskRegistry.all()) maskRegistry.delete(m.key);
     void refresh();
@@ -140,9 +143,9 @@ function StoragePanel() {
       </div>
       {sizes && (
         <table className="w-full"><tbody>
-          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.originals')}</td><td className="text-right text-ink">{fmt(sizes.originals)}</td></tr>
-          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.previews')}</td><td className="text-right text-ink">{fmt(sizes.previews)}</td></tr>
-          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.models')}</td><td className="text-right text-ink">{fmt(sizes.models)}</td></tr>
+          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.originals')}</td><td className="text-end text-ink">{fmt(sizes.originals)}</td></tr>
+          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.previews')}</td><td className="text-end text-ink">{fmt(sizes.previews)}</td></tr>
+          <tr><td className="py-0.5 text-ink-faint">{t('settings.storage.models')}</td><td className="text-end text-ink">{fmt(sizes.models)}</td></tr>
         </tbody></table>
       )}
       <div className="flex flex-wrap gap-2">
@@ -156,10 +159,10 @@ function StoragePanel() {
         <table className="w-full"><tbody>
           {Object.values(MODELS).map((m) => (
             <tr key={m.id}>
-              <td className="py-0.5 pr-2">{m.name}</td>
-              <td className="pr-2 text-ink-faint">{m.license}</td>
-              <td className="pr-2 text-right tabular-nums text-ink-faint">{fmt(m.bytes)}</td>
-              <td className="text-right">{models.includes(m.id) ? 'offline ✓' : '—'}</td>
+              <td className="py-0.5 pe-2">{m.name}</td>
+              <td className="pe-2 text-ink-faint">{m.license}</td>
+              <td className="pe-2 text-end tabular-nums text-ink-faint">{fmt(m.bytes)}</td>
+              <td className="text-end">{models.includes(m.id) ? tr('settingsDialog.offline') : '—'}</td>
             </tr>
           ))}
         </tbody></table>
@@ -186,7 +189,7 @@ export function SettingsDialog() {
         <div className="flex items-center border-b border-line px-4 py-3">
           <h2 id="settings-title" className="text-sm font-medium">{t('settings.title')}</h2>
           <div className="flex-1" />
-          <button className="text-ink-dim hover:text-ink" onClick={close} aria-label="Close">✕</button>
+          <IconButton className="text-ink-dim hover:text-ink" onClick={close} label={tr('settingsDialog.close')} shortcut="Esc">✕</IconButton>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           <Section title={t('settings.general')}>
@@ -195,12 +198,14 @@ export function SettingsDialog() {
                 <option value="dark">{t('settings.theme.dark')}</option>
                 <option value="darker">{t('settings.theme.darker')}</option>
                 <option value="light">{t('settings.theme.light')}</option>
+                <option value="system">{t('settings.theme.system')}</option>
               </select>
             </Row>
             <Row label={t('settings.language')} htmlFor="set-lang">
-              <select id="set-lang" className="input" value={s.language} onChange={(e) => set({ language: e.target.value })}>
+              <select id="set-lang" className="input" value={s.language} aria-describedby="set-lang-hint" onChange={(e) => { set({ language: e.target.value }); window.location.reload(); }}>
                 {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
               </select>
+              <span id="set-lang-hint" className="ms-2 text-2xs text-ink-faint">{t('settings.language.reload')}</span>
             </Row>
             <Row label={t('settings.motion')} htmlFor="set-motion">
               <select id="set-motion" className="input" value={s.reducedMotion} onChange={(e) => set({ reducedMotion: e.target.value as 'system' | 'on' | 'off' })}>
@@ -233,14 +238,20 @@ export function SettingsDialog() {
               </select>
             </Row>
           </Section>
-          <Section title={t('settings.gpu')}><GpuInfo /></Section>
+          {/* Diagnostics for bug reports: collapsed so they don't compete with real settings. */}
+          <details className="group mb-5">
+            <summary className="mb-2 flex cursor-pointer list-none items-center gap-1.5 border-b border-line pb-1 text-2xs font-medium uppercase tracking-wider text-ink-faint hover:text-ink">
+              <span aria-hidden className="transition-transform group-open:rotate-90">▸</span>{t('settings.gpu')}
+            </summary>
+            <div className="text-xs text-ink-dim"><GpuInfo /></div>
+          </details>
           <Section title={t('settings.storage')}><StoragePanel /></Section>
           <Section title={t('settings.about')}>
-            <p>Optic · everything runs on this device; photos are never uploaded. No accounts, no analytics.</p>
+            <p>{tr('settingsDialog.optic_everything_runs_on_this_device')}</p>
             <div className="flex flex-wrap gap-2">
               <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={() => { close(); set({ onboardingDone: false }); }}>{t('settings.tour')}</button>
-              <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={() => useUi.getState().set({ settingsOpen: false, shortcutsOpen: true })}>{'Keyboard shortcuts (?)'}</button>
-              <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={() => { if (confirm('Reset all settings to their defaults?')) useSettings.getState().reset(); }}>{t('settings.reset')}</button>
+              <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={() => useUi.getState().set({ settingsOpen: false, shortcutsOpen: true })}>{tr('settingsDialog.keyboard_shortcuts')}</button>
+              <button className="rounded border border-line px-2 py-1 hover:bg-hover" onClick={async () => { if (await confirmDialog({ title: tr('settingsDialog.reset_all_settings_to_their_defaults'), message: tr('settingsDialog.your_photos_edits_and_presets_are'), confirmLabel: tr('settingsDialog.reset_settings'), danger: true })) useSettings.getState().reset(); }}>{t('settings.reset')}</button>
             </div>
           </Section>
         </div>

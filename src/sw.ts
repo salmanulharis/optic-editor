@@ -55,6 +55,12 @@ registerRoute(
   new CacheFirst({ cacheName: 'optic-model-files', plugins: [new ExpirationPlugin({ maxEntries: 12 }), isolatePlugin] }),
 );
 
+// "Try a sample photo" (same origin, see scripts/fetch-sample.mjs): cache on first use, keep offline.
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/samples/') && !url.pathname.endsWith('.json'),
+  new CacheFirst({ cacheName: 'optic-sample', plugins: [new ExpirationPlugin({ maxEntries: 2 }), isolatePlugin] }),
+);
+
 // Share target: photos shared from the Photos app / Files arrive as a POST.
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);

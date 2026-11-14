@@ -41,6 +41,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # Optional "Try a sample photo" (CC0 RAW from raw.pixls.us, ~10 MB in public/samples). Never
+      # fails the deploy: if the download fails, the app simply doesn't show the button.
+      - name: Fetch the sample photo
+        run: npm run sample:fetch || echo "::warning::Sample photo not fetched; the Try a sample photo button will be hidden."
+
       - name: Build
         run: npm run build
 

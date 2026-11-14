@@ -47,12 +47,12 @@ export function Menu(props: { label: ReactNode; items: MenuItem[]; title?: strin
       </button>
       {open && (
         <div ref={listRef} role="menu"
-          className={`absolute z-50 mt-1 max-h-[60vh] min-w-[180px] overflow-y-auto rounded border border-line bg-raise py-1 shadow-xl ${props.align === 'right' ? 'right-0' : 'left-0'}`}>
+          className={`absolute z-50 mt-1 max-h-[60vh] min-w-[180px] overflow-y-auto rounded border border-line bg-raise py-1 shadow-xl ${props.align === 'right' ? 'end-0' : 'start-0'}`}>
           {props.items.map((it, i) => it.heading ? (
-            <div key={i} className="px-3 pb-0.5 pt-1.5 text-[10px] uppercase tracking-wider text-ink-faint">{it.label}</div>
+            <div key={i} className="px-3 pb-0.5 pt-1.5 text-2xs uppercase tracking-wider text-ink-faint">{it.label}</div>
           ) : (
             <button key={i} role="menuitem" type="button" disabled={it.disabled} title={it.hint}
-              className="block w-full px-3 py-1.5 text-left text-xs text-ink hover:bg-active focus:bg-active focus:outline-none disabled:opacity-40"
+              className="block w-full px-3 py-1.5 text-start text-xs text-ink hover:bg-active focus:bg-active focus:outline-none disabled:opacity-40"
               onClick={() => { setOpen(false); it.onSelect?.(); }}>
               {it.label}
             </button>

@@ -8,6 +8,7 @@ import { FaceLandmarker, ImageSegmenter } from '@mediapipe/tasks-vision';
 
 type WasmFileset = Parameters<typeof ImageSegmenter.createFromOptions>[0];
 import { fetchModel } from './models';
+import { type AnyContext2D, context2d, createCanvas } from '../io/canvas';
 
 type Progress = (f: number, label: string) => void;
 interface Rgba { data: Uint8ClampedArray; width: number; height: number }
@@ -85,9 +86,9 @@ export async function faceParts(input: Rgba, progress: Progress): Promise<{ eyes
   progress(1, 'Finding faces');
   const res = await quiet(() => f.detect(imageData(input)));
   const W = input.width, H = input.height;
-  const draw = (fill: (ctx: OffscreenCanvasRenderingContext2D, pt: (i: number) => [number, number], scale: number) => void) => {
-    const c = new OffscreenCanvas(W, H);
-    const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  const draw = (fill: (ctx: AnyContext2D, pt: (i: number) => [number, number], scale: number) => void) => {
+    const c = createCanvas(W, H);
+    const ctx = context2d(c, { willReadFrequently: true });
     for (const lm of res.faceLandmarks) {
       const pt = (i: number): [number, number] => [lm[i].x * W, lm[i].y * H];
       // Face width (outer eye corners) sets the feather.
@@ -99,7 +100,7 @@ export async function faceParts(input: Rgba, progress: Progress): Promise<{ eyes
     for (let i = 0; i < out.length; i++) out[i] = d[i * 4 + 3];
     return out;
   };
-  const poly = (ctx: OffscreenCanvasRenderingContext2D, pt: (i: number) => [number, number], idx: number[]) => {
+  const poly = (ctx: AnyContext2D, pt: (i: number) => [number, number], idx: number[]) => {
     ctx.beginPath();
     idx.forEach((i, k) => (k ? ctx.lineTo(...pt(i)) : ctx.moveTo(...pt(i))));
     ctx.closePath();

@@ -15,6 +15,7 @@ import { TiffReader } from '../metadata/tiffReader';
 import { extractJpegExif } from '../metadata/exif';
 import { allocFloat, applyOrientation } from './imageOps';
 import type { FloatImage, ImageColor, SourceFormat } from './types';
+import { context2d, createCanvas } from '../canvas';
 
 (globalThis as unknown as { pako: typeof pako }).pako = pako; // UTIF expects a global for Deflate TIFFs
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,8 +246,8 @@ async function decodeViaBrowser(b: Uint8Array, mime: string, format: SourceForma
     imageOrientation: 'from-image',
     premultiplyAlpha: 'none',
   });
-  const canvas = new OffscreenCanvas(bmp.width, bmp.height);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const canvas = createCanvas(bmp.width, bmp.height);
+  const ctx = context2d(canvas, { willReadFrequently: true });
   ctx.drawImage(bmp, 0, 0);
   const id = ctx.getImageData(0, 0, bmp.width, bmp.height);
   bmp.close();

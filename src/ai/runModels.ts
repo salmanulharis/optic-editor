@@ -16,6 +16,7 @@ import { defaultRecipeFor, type LoadedImage } from '../state/imageStore';
 import { useEdit } from '../state/editStore';
 import type { AiWorkerApi } from './ai.worker';
 import { fetchModel } from './models';
+import { context2d, createCanvas } from '../io/canvas';
 
 export const AI_EDGE = 1024;
 const U2_SIZE = 320;
@@ -38,10 +39,10 @@ function aiInput(img: LoadedImage): Rgba {
 }
 
 function resize(src: Rgba, w: number, h: number): Uint8Array {
-  const a = new OffscreenCanvas(src.width, src.height);
-  a.getContext('2d')!.putImageData(new ImageData(src.data as unknown as Uint8ClampedArray<ArrayBuffer>, src.width, src.height), 0, 0);
-  const b = new OffscreenCanvas(w, h);
-  const ctx = b.getContext('2d', { willReadFrequently: true })!;
+  const a = createCanvas(src.width, src.height);
+  context2d(a).putImageData(new ImageData(src.data as unknown as Uint8ClampedArray<ArrayBuffer>, src.width, src.height), 0, 0);
+  const b = createCanvas(w, h);
+  const ctx = context2d(b, { willReadFrequently: true });
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(a, 0, 0, w, h);
   return new Uint8Array(ctx.getImageData(0, 0, w, h).data.buffer);

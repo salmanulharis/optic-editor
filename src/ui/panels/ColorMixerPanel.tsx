@@ -1,3 +1,4 @@
+import { t as tr } from '../../i18n';
 import { useState } from 'react';
 import { HSL_CENTERS_DEG } from '../../pipeline/stages/40_hsl';
 import { HSL_BANDS, type HslAdjust, type HslBand, defaultRecipe } from '../../recipe/schema';
@@ -8,9 +9,9 @@ import { Slider } from '../controls/Slider';
 import { grad } from './common';
 
 type Prop = keyof HslAdjust;
-const TABS: Array<[Prop, string]> = [['hue', 'Hue'], ['sat', 'Saturation'], ['lum', 'Luminance']];
+const TABS: Array<[Prop, string]> = [['hue', tr('colorMixerPanel.hue')], ['sat', tr('colorMixerPanel.saturation')], ['lum', tr('colorMixerPanel.luminance')]];
 const NAMES: Record<HslBand, string> = {
-  red: 'Red', orange: 'Orange', yellow: 'Yellow', green: 'Green', aqua: 'Aqua', blue: 'Blue', purple: 'Purple', magenta: 'Magenta',
+  get red() { return tr('colorMixerPanel.red'); }, get orange() { return tr('colorMixerPanel.orange'); }, get yellow() { return tr('colorMixerPanel.yellow'); }, get green() { return tr('colorMixerPanel.green'); }, get aqua() { return tr('colorMixerPanel.aqua'); }, get blue() { return tr('colorMixerPanel.blue'); }, get purple() { return tr('colorMixerPanel.purple'); }, get magenta() { return tr('colorMixerPanel.magenta'); },
 };
 
 /** Track gradients drawn with CSS oklch() so they show the actual colours being adjusted. */
@@ -33,13 +34,13 @@ function BwMixerPanel() {
   const commit = () => useEdit.getState().commit();
   return (
     <Section
-      title="B&W Mixer"
+      title={tr('colorMixerPanel.b_w_mixer')}
       enabled={m.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('bwMixer', on)}
       onReset={() => useEdit.getState().apply((r) => ({ ...r, bwMixer: { ...defaultRecipe().bwMixer, enabled: r.bwMixer.enabled } }))}
     >
       <div className="mb-2 flex justify-end">
-        <button className="rounded border border-line bg-raise px-2 py-1 text-xs hover:bg-hover" onClick={autoBwMix}>Auto mix</button>
+        <button className="rounded border border-line bg-raise px-2 py-1 text-xs hover:bg-hover" onClick={autoBwMix}>{tr('colorMixerPanel.auto_mix')}</button>
       </div>
       {HSL_BANDS.map((b, i) => (
         <Slider key={b} label={NAMES[b]} value={m[b]} min={-100} max={100} step={1} defaultValue={0}
@@ -47,7 +48,7 @@ function BwMixerPanel() {
           onChange={(v) => set({ [b]: v })} onCommit={commit} />
       ))}
       <div className="mt-1 border-t border-line pt-1">
-        <Slider label="Monochrome amount" value={m.mix} min={0} max={100} step={1} defaultValue={100}
+        <Slider label={tr('colorMixerPanel.monochrome_amount')} value={m.mix} min={0} max={100} step={1} defaultValue={100}
           format={(v) => `${Math.round(v)}%`} onChange={(v) => set({ mix: v })} onCommit={commit} />
       </div>
     </Section>
@@ -66,7 +67,7 @@ function HslPanel() {
 
   return (
     <Section
-      title="Color Mixer"
+      title={tr('colorMixerPanel.color_mixer')}
       enabled={hsl.enabled}
       onToggle={(on) => useEdit.getState().setSectionEnabled('hsl', on)}
       onReset={() => useEdit.getState().apply((r) => ({ ...r, hsl: { ...defaultRecipe().hsl, enabled: r.hsl.enabled } }))}
