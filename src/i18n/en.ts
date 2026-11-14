@@ -1247,6 +1247,10 @@ const en: Record<string, string> = {
   'shortcuts.keys.backslash_hold': '\\ (hold)',
   'shortcuts.keys.arrows_shift': '← / → (Shift ×10)',
   'importDialog.session_only': 'This browser can’t keep copies of your photos (for example in a private window). Imported photos work until you close this tab; their edits are kept, and importing the same files again makes them available again.',
+  'native.saved_to': 'Saved to {location}',
+  'native.save_dialog': 'Save {name}',
+  'native.save_failed': 'Could not save {name}: {msg}',
+  'native.shared_failed': 'Could not open the shared photo: {msg}',
 };
 
 export default en;

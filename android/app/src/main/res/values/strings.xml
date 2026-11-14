@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Optic</string>
+    <string name="title_activity_main">Optic</string>
+    <string name="package_name">in.techbysh.optic</string>
+    <string name="custom_url_scheme">in.techbysh.optic</string>
+    <string name="share_label">Edit in Optic</string>
+    <string name="open_label">Optic</string>
+</resources>

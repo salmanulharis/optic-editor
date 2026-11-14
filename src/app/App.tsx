@@ -14,6 +14,7 @@ import { useImage } from '../state/imageStore';
 import { Viewer } from '../ui/canvas/Viewer';
 import { restoreExportQueue, useExportQueue } from '../library/exportQueue';
 import { initPwa } from './pwa';
+import { initNative } from './native';
 import { HistogramView } from '../ui/histogram/Histogram';
 import { ColorMixerPanel } from '../ui/panels/ColorMixerPanel';
 import { CurvePanel } from '../ui/panels/CurvePanel';
@@ -160,6 +161,7 @@ export function App() {
     startLibrarySync();
     void restoreExportQueue();
     void initPwa();
+    void initNative();
     // Background work (preset thumbnails) pauses while any pointer is held down.
     const down = () => useUi.getState().set({ dragging: true });
     const up = () => useUi.getState().set({ dragging: false });

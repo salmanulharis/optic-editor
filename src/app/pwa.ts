@@ -10,6 +10,7 @@ import { openPhoto } from '../library/open';
 import { useLibrary } from '../state/libraryStore';
 import { confirmDialog } from '../ui/feedback/dialogs';
 import { t } from '../i18n';
+import { isNative } from './native';
 
 interface PwaState {
   offlineReady: boolean;
@@ -28,6 +29,12 @@ export const usePwa = create<PwaState>((set) => ({
 }));
 
 export async function initPwa() {
+  // The Android / iOS apps ship every file in the bundle and add the isolation headers natively:
+  // no service worker (it would only shadow app updates).
+  if (isNative()) {
+    void requestPersistence();
+    return;
+  }
   if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     try {
       const { registerSW } = await import('virtual:pwa-register');
@@ -75,7 +82,8 @@ export async function requestPersistence(): Promise<boolean> {
   }
 }
 
-function ingest(list: Incoming[]) {
+/** Open one photo in the editor, or review several in the import dialog. */
+export function ingest(list: Incoming[]) {
   if (!list.length) return;
   if (list.length === 1) {
     useLibrary.getState().set({ view: 'editor' });

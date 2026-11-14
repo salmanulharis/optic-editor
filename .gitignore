@@ -8,3 +8,6 @@ public/models/
 test-results/
 playwright-report/
 public/samples/
+# Mobile apps: icon sources (rendered by `npm run native:assets`) and build outputs
+assets/
+release/

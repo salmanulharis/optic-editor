@@ -131,6 +131,8 @@ export default defineConfig({
         manualChunks(id) {
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
           if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) return 'dexie';
+          // The Android app's bridge (its plugins stay lazy-loaded in src/app/native.ts).
+          if (/[\\/]node_modules[\\/]@capacitor[\\/]core[\\/]/.test(id)) return 'capacitor';
           // The 64 built-in preset JSON files: data, versioned separately from the code.
           if (/[\\/]src[\\/]presets[\\/]builtin[\\/].+\.json$/.test(id)) return 'presets-builtin';
           // Interface messages (src/i18n/en.ts): data, versioned separately from the code.

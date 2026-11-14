@@ -8,7 +8,7 @@ import { useSettings } from './state/settingsStore';
 initTheme();
 
 if (!globalThis.crossOriginIsolated) {
-  console.warn('[optic] Page is not cross-origin isolated: RAW decoding (LibRaw threads) and zero-copy sharing are unavailable.');
+  console.warn('[optic] Page is not cross-origin isolated: decoders run single-threaded and images are copied between threads (slower, same results).');
 }
 
 /** Re-renders the interface when the language changes (components call t() directly). */

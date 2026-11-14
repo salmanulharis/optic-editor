@@ -150,11 +150,14 @@ export async function encodeCanvas(c: AnyCanvas, quality = 0.85): Promise<Blob> 
 
 /**
  * A quick thumbnail (and a preview if the source is large enough) without decoding the RAW data.
- * Null when there is nothing to show quickly (HEIC, CR3): the background render provides it.
+ * HEIC: the browser's decoder where it has one (Safari), else libheif at 8 bits.
+ * Null when there is nothing to show quickly (some CR3s, huge HEICs): the background render
+ * provides it.
  */
 export async function quickPreview(file: File, facts: Pick<FileFacts, 'format' | 'orientation'>): Promise<QuickPreview | null> {
   let src: Blob | null = null;
   let orientation = 1;
+  if (facts.format === 'heic') return heicQuickPreview(file);
   if (facts.format === 'jpeg' || facts.format === 'png' || facts.format === 'webp' || facts.format === 'avif') src = file;
   else if (facts.format === 'dng' || facts.format === 'raw' || facts.format === 'tiff') {
     src = await embeddedJpeg(file);
@@ -182,5 +185,29 @@ export async function quickPreview(file: File, facts: Pick<FileFacts, 'format' |
     }
   } catch {
     return null;
+  }
+}
+
+/** HEIC quick preview (libheif applies the HEIF rotation, so the pixels are already upright). */
+async function heicQuickPreview(file: File): Promise<QuickPreview | null> {
+  let bmp: ImageBitmap | null = null;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions);
+  } catch {
+    try {
+      const { decodeHeicPreview } = await import('../io/decode/heicDecoder');
+      const px = await decodeHeicPreview(new Uint8Array(await file.arrayBuffer()));
+      if (px) bmp = await createImageBitmap(px);
+    } catch {
+      bmp = null;
+    }
+  }
+  if (!bmp) return null;
+  try {
+    const thumb = await encodeCanvas(orient(bmp, 1, THUMB_EDGE), 0.82);
+    const preview = Math.max(bmp.width, bmp.height) >= 1200 ? await encodeCanvas(orient(bmp, 1, PREVIEW_EDGE), 0.85) : null;
+    return { thumb, preview, width: bmp.width, height: bmp.height };
+  } finally {
+    bmp.close();
   }
 }

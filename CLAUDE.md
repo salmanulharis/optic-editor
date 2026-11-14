@@ -31,6 +31,9 @@ npm run lensfun:subset # regenerate src/io/lens/lensfun-subset.json from the len
 npm run models:fetch   # optional: AI models into public/models (gitignored) for self-hosting
 npm run icons          # PWA icons + Apple splash screens from public/icons/optic.svg
 npm run sample:fetch   # optional: CC0 sample RAW for "Try a sample photo" (public/samples, gitignored)
+npm run cap:sync       # web build copied into android/ (Capacitor)
+npm run android:apk    # release APK → release/optic-<version>.apk (signing: android/keystore.properties)
+npm run native:assets  # native app icons + splash screens from public/icons/optic.svg
 ```
 
 `test:seams` and `bench` start Vite programmatically and drive `bench.html` (dev-only page, `src/bench/`) in headless Chrome/Edge via `playwright-core`. Set `CHROME_PATH` or `CHROME_CHANNEL` to choose the browser.
@@ -70,7 +73,7 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
 ## Architecture
 
 ### Recipe = single source of truth (`src/recipe/`)
-- `Recipe` (`schema.ts`, v3) is versioned and JSON-serialisable. `serialize.ts` migrates older versions step by step (`MIGRATIONS`), then `parseGroups` parses tolerantly and clamps every value. Presets reuse `parseGroups` for their partial recipes.
+- `Recipe` (`schema.ts`, v4) is versioned and JSON-serialisable. `serialize.ts` migrates older versions step by step (`MIGRATIONS`), then `parseGroups` parses tolerantly and clamps every value. Presets reuse `parseGroups` for their partial recipes.
 - v3 sections: `detail` (sharpen, nr), `effects` (texture, clarity, dehaze, grain, halation, bloom, vignette), `lens`, `geometry` (upright, guides, transform sliders, constrainCrop), `crop` (R-normalised rect, angle, aspect label, flips, rotate90).
 - v4: `masks` (`recipe/masks.ts`). Components live in the undistorted frame U (0…1), so they follow geometry:
   - gradients as parameters
@@ -191,6 +194,11 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - Orientation is always written as 1 (pixels are exported upright).
 - `exportClient.ts` asks for the File System Access save handle *before* any await, since it needs the click's user activation. It falls back to `<a download>`. Virtual copies export under their own name.
 
+### Android app (`android/`, `capacitor.config.ts`, docs/MOBILE.md)
+- Capacitor 8 loads `dist/` from the APK. **Android WebView is never cross-origin isolated**: `SharedArrayBuffer` is undefined, decoders run single-threaded, images are copied between threads. Never reference `SharedArrayBuffer` unguarded (`transferable` / `allocFloat` in `io/decode/imageOps.ts`); an unguarded `instanceof` made every photo fail on Android.
+- `src/app/native.ts` is the only place that talks to native code: `isNative()`, `saveFileNative` (cache → MediaStore via `OpticFilesPlugin.java`; used by `downloadBlob` and preset `download`), shared / opened files, the back button, haptics. Everything is a no-op on the web.
+- Test on an emulator started with `-gpu host`: its default SwiftShader renderer corrupts uniforms in large shaders (magenta RAWs). `OPTIC_DEBUG=1` / `OPTIC_DEV_URL` are documented in docs/MOBILE.md. There is no iOS app.
+
 ### PWA, mobile, settings
 - **PWA**: `vite-plugin-pwa` in injectManifest mode, with `src/sw.ts`. The service worker:
   - precaches about 54 MB, including the WASM runtimes;
@@ -229,7 +237,7 @@ It is a 12 MP lossy-JPEG DNG at ISO 125 with no opcode lists. `sample-files/luts
   - Export renders on the main thread when the worker can't draw (`canDrawHere`); the watermark is drawn there and passed as `watermarkMark`.
   - `library/opfs.ts` keeps files in memory without OPFS, and `library/sessionFiles.ts` holds picked or dropped originals for the session.
   - WebKit gets `preserveDrawingBuffer` on the viewer canvas (`gl/context.ts`): offscreen draws on the viewer's context (thumbnails, auto tools, readout) otherwise blank the shown frame.
-  - `vite.config.ts` `manualChunks` splits out `react`, `dexie`, `presets-builtin` and `messages-en`. The main chunk is about 490 kB; keep it under Vite's 500 kB warning.
+  - `vite.config.ts` `manualChunks` splits out `react`, `dexie`, `capacitor`, `presets-builtin` and `messages-en`. The main chunk is about 498 kB; keep it under Vite's 500 kB warning (Android-only code goes in `app/nativeApp.ts`, loaded lazily).
 
 ### Presets (`src/presets/`, `src/state/presetStore.ts`)
 - Built-ins are JSON files in `src/presets/builtin/<category>/` (`bw`, `cinematic`, `film`, `hasselblad`, `leica`, `zeiss`; browser categories ordered by `BUILTIN_GROUP_ORDER`, not the recipe `PRESET_GROUPS`), format version 3 (version 2 files load unchanged), loaded with `import.meta.glob` in `builtin/index.ts`. They are the source of truth: edit them directly. Adding a file ships a new built-in. User presets and imported LUTs live in IndexedDB (`src/storage/db.ts`), and `.opticpack` is a plain zip (`src/storage/zip.ts`).

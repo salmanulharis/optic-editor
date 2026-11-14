@@ -2,6 +2,7 @@
 import * as Comlink from 'comlink';
 import { decodeHeic } from './heicDecoder';
 import { decodeImage, packDecoded } from './imageDecode';
+import { transferable } from './imageOps';
 import type { DecodeOptions, DecodeResult, ProgressFn, SourceFormat } from './types';
 
 const api = {
@@ -15,7 +16,7 @@ const api = {
       result = await decodeImage(bytes, format, opts, progress);
     }
     // Shared buffers are visible to every thread already; only plain ArrayBuffers are transferred.
-    const transfers = [result.full.data.buffer, result.proxy.data.buffer, result.thumb.data.buffer].filter((b): b is ArrayBuffer => !(b instanceof SharedArrayBuffer));
+    const transfers = transferable([result.full.data.buffer, result.proxy.data.buffer, result.thumb.data.buffer]);
     return Comlink.transfer(result, transfers);
   },
 };

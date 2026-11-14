@@ -13,6 +13,7 @@ import { GROUP_LABELS, PRESET_GROUPS, type PresetGroup } from '../recipe/schema'
 import { dbDelete, dbGetAll, dbPut, lsGet, lsSet } from '../storage/db';
 import { ZipLimitError, readZip, writeZip } from '../storage/zip';
 import { lightroomLimit } from '../presets/lightroom/limits';
+import { isNative, saveFileNative } from '../app/native';
 
 interface PresetState {
   ready: boolean;
@@ -346,6 +347,10 @@ export function buildPack(presets: Preset[]): Uint8Array {
 }
 
 export function download(name: string, data: BlobPart, type: string) {
+  if (isNative()) {
+    void saveFileNative(new Blob([data], { type }), name);
+    return;
+  }
   const url = URL.createObjectURL(new Blob([data], { type }));
   const a = document.createElement('a');
   a.href = url;
